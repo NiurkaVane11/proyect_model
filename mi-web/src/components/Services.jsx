@@ -1,125 +1,177 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Scissors, Sparkles, Star, Droplets, ArrowRight } from 'lucide-react'
+import { Package, Rocket, Crown, ArrowRight, Check } from 'lucide-react'
 
 function Services() {
-  const services = [
+  const plans = [
     { 
-      name: "Corte de Cabello", 
-      price: "$15", 
-      desc: "Corte clásico o moderno personalizado según tu estilo", 
-      icon: Scissors,
-      popular: false
+      name: "Plan Básico", 
+      price: "$9,500", 
+      desc: "Perfecto para emprendedores que inician", 
+      icon: Package,
+      popular: false,
+      features: [
+        "500 bolsas mensuales",
+        "1 ruta comercial asignada",
+        "Capacitación inicial completa",
+        "Soporte técnico básico",
+        "Material promocional"
+      ]
     },
     { 
-      name: "Arreglo de Barba", 
-      price: "$10", 
-      desc: "Perfilado y recorte profesional con navaja caliente", 
-      icon: Sparkles,
-      popular: false
+      name: "Plan Profesional", 
+      price: "$15,000", 
+      desc: "Para quienes buscan mayor alcance publicitario", 
+      icon: Rocket,
+      popular: true,
+      features: [
+        "1,500 bolsas mensuales",
+        "3 rutas comerciales",
+        "Capacitación avanzada",
+        "Soporte técnico prioritario",
+        "CRM para gestión de clientes",
+        "Diseño gráfico incluido"
+      ]
     },
     { 
-      name: "Combo Completo", 
-      price: "$20", 
-      desc: "Corte + Barba + Tratamiento capilar premium", 
-      icon: Star,
-      popular: true
-    },
-    { 
-      name: "Tratamiento Capilar", 
-      price: "$12", 
-      desc: "Hidratación profunda y cuidado del cuero cabelludo", 
-      icon: Droplets,
-      popular: false
+      name: "Plan Premium", 
+      price: "$25,000", 
+      desc: "Máximo impacto y rentabilidad garantizada", 
+      icon: Crown,
+      popular: false,
+      features: [
+        "3,000+ bolsas mensuales",
+        "5+ rutas comerciales",
+        "Equipo de diseño dedicado",
+        "Soporte 24/7 VIP",
+        "Software de gestión completo",
+        "Marketing digital incluido",
+        "Oficina virtual"
+      ]
     }
   ];
 
   return (
-    <section id="servicios" className="py-24 bg-gradient-to-b from-white to-slate-50">
+    <section id="planes" className="py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
         {/* Header de sección */}
         <div className="text-center mb-16 space-y-4">
-          <Badge className="bg-yellow-500 text-black mb-4">Nuestros Servicios</Badge>
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-900">
-            Servicios Premium
+          <Badge className="bg-red-600 text-white">Planes de Franquicia</Badge>
+          <h2 className="text-4xl sm:text-5xl font-black text-gray-900">
+            Elige Tu Plan Ideal
           </h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Experiencia profesional con productos de primera calidad
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Inversión accesible con retorno garantizado. Comienza tu negocio rentable hoy.
           </p>
         </div>
         
-        {/* Grid de servicios */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {services.map((service, index) => {
-            const IconComponent = service.icon;
+        {/* Grid de planes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan, index) => {
+            const IconComponent = plan.icon;
             return (
               <Card 
                 key={index} 
-                className="relative hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-slate-200 overflow-hidden group"
+                className={`relative hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden group ${
+                  plan.popular 
+                    ? 'border-red-600 border-2 shadow-xl scale-105' 
+                    : 'border-gray-200'
+                }`}
               >
                 {/* Badge de "Más Popular" */}
-                {service.popular && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge className="bg-yellow-500 text-black">Más Popular</Badge>
+                {plan.popular && (
+                  <div className="absolute top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm font-bold">
+                    ⭐ MÁS POPULAR
                   </div>
                 )}
                 
                 {/* Barra superior con gradiente */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 to-amber-500"></div>
+                <div className={`absolute ${plan.popular ? 'top-10' : 'top-0'} left-0 right-0 h-1 bg-gradient-to-r ${
+                  plan.popular 
+                    ? 'from-red-500 to-orange-500' 
+                    : 'from-gray-300 to-gray-400'
+                }`}></div>
                 
-                <CardHeader>
+                <CardHeader className={plan.popular ? 'pt-16' : 'pt-8'}>
                   {/* Icono */}
                   <div className="mb-4 flex justify-center">
-                    <div className="p-4 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                      <IconComponent className="w-8 h-8 text-black" strokeWidth={2.5} />
+                    <div className={`p-4 bg-gradient-to-br ${
+                      plan.popular 
+                        ? 'from-red-500 to-orange-500' 
+                        : 'from-gray-400 to-gray-500'
+                    } rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}>
+                      <IconComponent className="w-8 h-8 text-white" strokeWidth={2.5} />
                     </div>
                   </div>
                   
-                  <CardTitle className="text-center text-2xl group-hover:text-yellow-600 transition-colors">
-                    {service.name}
+                  <CardTitle className="text-center text-2xl">
+                    {plan.name}
                   </CardTitle>
                 </CardHeader>
                 
-                <CardContent className="text-center space-y-4">
+                <CardContent className="text-center space-y-6">
                   {/* Precio */}
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-amber-600">
-                      {service.price}
-                    </span>
-                    <span className="text-slate-500 text-sm">/ sesión</span>
+                  <div className="space-y-2">
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className={`text-5xl font-black ${
+                        plan.popular 
+                          ? 'text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600' 
+                          : 'text-gray-900'
+                      }`}>
+                        {plan.price}
+                      </span>
+                    </div>
+                    <p className="text-gray-500 text-sm">Inversión única</p>
                   </div>
                   
                   {/* Descripción */}
-                  <CardDescription className="text-slate-600 leading-relaxed">
-                    {service.desc}
+                  <CardDescription className="text-gray-600 leading-relaxed">
+                    {plan.desc}
                   </CardDescription>
+                  
+                  {/* Características */}
+                  <div className="text-left space-y-3 pt-4">
+                    {plan.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <Check className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                          plan.popular ? 'text-red-600' : 'text-green-600'
+                        }`} />
+                        <span className="text-gray-700 text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
                 
                 <CardFooter className="flex justify-center pb-6">
                   <Button 
-                    variant="outline" 
-                    className="w-full group-hover:bg-yellow-500 group-hover:text-black group-hover:border-yellow-500 transition-all duration-300"
+                    className={`w-full ${
+                      plan.popular 
+                        ? 'bg-red-600 hover:bg-red-700 text-white' 
+                        : 'bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300'
+                    } transition-all duration-300`}
                   >
-                    Reservar
+                    Comenzar Ahora
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </CardFooter>
                 
                 {/* Efecto de brillo al hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-all duration-1000"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-all duration-1000"></div>
               </Card>
             );
           })}
         </div>
         
         {/* CTA adicional */}
-        <div className="text-center mt-16">
-          <p className="text-slate-600 mb-4">¿No encuentras lo que buscas?</p>
+        <div className="text-center mt-16 space-y-4">
+          <p className="text-gray-600">¿Tienes dudas sobre cuál plan elegir?</p>
           <Button size="lg" variant="outline" className="border-2">
-            Ver Todos los Servicios
+            Hablar con un Asesor
           </Button>
         </div>
+        
       </div>
     </section>
   );
