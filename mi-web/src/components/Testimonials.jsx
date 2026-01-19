@@ -1,55 +1,175 @@
+import { Badge } from './ui/badge'
+import { Card, CardContent } from './ui/card'
+import { Star, Quote, TrendingUp } from 'lucide-react'
+
 function Testimonials() {
   const testimonials = [
-    { name: "Carlos M.", text: "Excelente servicio, los barberos son muy profesionales y el ambiente es increíble.", rating: 5 },
-    { name: "Miguel R.", text: "Llevo 2 años viniendo y siempre salgo satisfecho. Totalmente recomendado.", rating: 5 },
-    { name: "Javier L.", text: "La mejor barbería de la ciudad, sin duda. Atención de primera.", rating: 5 }
+    { 
+      name: "Carlos Mendoza", 
+      location: "Ciudad de México",
+      plan: "Plan Profesional",
+      text: "En solo 3 meses recuperé mi inversión. Ahora genero ingresos recurrentes de más de $30,000 mensuales. INFOPAN cambió mi vida.", 
+      rating: 5,
+      income: "$30K/mes",
+      avatar: "👨‍💼"
+    },
+    { 
+      name: "Ana García", 
+      location: "Guadalajara",
+      plan: "Plan Premium",
+      text: "Lo mejor es la flexibilidad de horarios. Manejo mi franquicia mientras cuido a mis hijos. El soporte del equipo es excepcional.", 
+      rating: 5,
+      income: "$45K/mes",
+      avatar: "👩‍💼"
+    },
+    { 
+      name: "Roberto Silva", 
+      location: "Monterrey",
+      plan: "Plan Básico",
+      text: "Empecé con el plan básico como ingreso extra. Ahora es mi negocio principal. La inversión es muy accesible y el retorno rápido.", 
+      rating: 5,
+      income: "$18K/mes",
+      avatar: "👨‍💻"
+    },
+    { 
+      name: "María López", 
+      location: "Puebla",
+      plan: "Plan Profesional",
+      text: "Como emprendedora buscaba algo rentable y sustentable. INFOPAN cumplió todas mis expectativas. Los clientes renuevan mes con mes.", 
+      rating: 5,
+      income: "$28K/mes",
+      avatar: "👩‍🦰"
+    }
   ];
 
   return (
-    <section id="testimonios" className="py-20 bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-4">Lo Que Dicen Nuestros Clientes</h2>
-        <p className="text-center text-gray-400 mb-12">Testimonios reales de clientes satisfechos</p>
+    <section id="testimonios" className="py-24 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+      {/* Efectos decorativos */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-green-500/5 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl"></div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Header */}
+        <div className="text-center mb-16 space-y-4">
+          <Badge className="bg-green-600 text-white">Historias de Éxito</Badge>
+          <h2 className="text-4xl sm:text-5xl font-black text-gray-900">
+            Lo Que Dicen Nuestros
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">
+              Franquiciados
+            </span>
+          </h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Historias reales de emprendedores que transformaron su futuro con INFOPAN
+          </p>
+        </div>
+        
+        {/* Grid de testimonios */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {testimonials.map((testimonial, index) => (
-            <div 
+            <Card 
               key={index} 
-              className="bg-gray-800 p-6 rounded-lg hover:bg-gray-750 transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 group cursor-pointer shadow-lg hover:shadow-2xl relative overflow-hidden"
+              className="relative bg-white border-2 border-gray-200 hover:border-red-600 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 group overflow-hidden"
             >
-              {/* Borde decorativo animado */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-yellow-300 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-              
-              {/* Comillas decorativas */}
-              <div className="text-6xl text-yellow-500 opacity-20 absolute top-2 right-4 group-hover:opacity-40 transition-opacity duration-500">
-                "
+              {/* Icono de comillas decorativo */}
+              <div className="absolute top-4 right-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Quote className="w-16 h-16 text-red-600" />
               </div>
               
-              <div className="text-yellow-500 text-2xl mb-4 transform group-hover:scale-110 transition-transform duration-500">
-                {Array.from({ length: testimonial.rating }).map((_, i) => (
-                  <span 
-                    key={i} 
-                    className="inline-block animate-pulse"
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  >
-                    ⭐
-                  </span>
-                ))}
-              </div>
+              <CardContent className="p-6 space-y-4">
+                {/* Avatar y nombre */}
+                <div className="flex items-center gap-3">
+                  <div className="text-4xl">{testimonial.avatar}</div>
+                  <div>
+                    <p className="font-bold text-lg text-gray-900">{testimonial.name}</p>
+                    <p className="text-sm text-gray-500">{testimonial.location}</p>
+                  </div>
+                </div>
+                
+                {/* Badge del plan */}
+                <Badge variant="outline" className="border-red-200 text-red-600">
+                  {testimonial.plan}
+                </Badge>
+                
+                {/* Estrellas */}
+                <div className="flex gap-1">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                    />
+                  ))}
+                </div>
+                
+                {/* Testimonio */}
+                <p className="text-gray-700 leading-relaxed text-sm italic">
+                  "{testimonial.text}"
+                </p>
+                
+                {/* Ingresos destacados */}
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Ingresos:</span>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                      <span className="text-xl font-black text-green-600">{testimonial.income}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
               
-              <p className="text-gray-300 mb-4 italic group-hover:text-white transition-colors duration-300 relative z-10">
-                "{testimonial.text}"
-              </p>
-              
-              <p className="font-bold text-yellow-500 group-hover:text-yellow-400 transition-colors duration-300">
-                {testimonial.name}
-              </p>
-              
-              {/* Efecto de brillo */}
-              <div className="absolute bottom-0 right-0 w-20 h-20 bg-yellow-500 rounded-full opacity-0 group-hover:opacity-10 transform scale-0 group-hover:scale-150 transition-all duration-700"></div>
-            </div>
+              {/* Barra inferior con gradiente */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-orange-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+            </Card>
           ))}
         </div>
+
+        {/* CTA Final */}
+        <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-12 text-center text-white relative overflow-hidden">
+          {/* Patrón decorativo */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'radial-gradient(circle, white 2px, transparent 2px)',
+              backgroundSize: '40px 40px'
+            }}></div>
+          </div>
+          
+          <div className="relative z-10 space-y-6">
+            <div className="text-6xl mb-4">🎯</div>
+            <h3 className="text-3xl sm:text-4xl font-black">
+              Tú Puedes Ser el Siguiente
+            </h3>
+            <p className="text-xl text-red-100 max-w-3xl mx-auto">
+              Únete a cientos de emprendedores exitosos que ya están generando ingresos recurrentes con INFOPAN
+            </p>
+            
+            {/* Estadísticas rápidas */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto pt-8">
+              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                <div className="text-4xl font-black mb-2">500+</div>
+                <div className="text-red-100 text-sm">Franquiciados Activos</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                <div className="text-4xl font-black mb-2">95%</div>
+                <div className="text-red-100 text-sm">Tasa de Satisfacción</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur rounded-xl p-6">
+                <div className="text-4xl font-black mb-2">3-6</div>
+                <div className="text-red-100 text-sm">Meses para ROI</div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+              <button className="bg-white text-red-600 hover:bg-gray-100 font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                Solicitar Información Ahora
+              </button>
+              <button className="border-2 border-white text-white hover:bg-white hover:text-red-600 font-bold px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105">
+                Hablar con un Franquiciado
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   );
