@@ -28,7 +28,6 @@ function Navbar() {
             Cómo Funciona
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 group-hover:w-full transition-all duration-300"></span>
           </a>
-          
           <a href="#contacto" className="hover:text-green-600 transition-all duration-300 relative group font-medium">
             Contacto
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-green-600 group-hover:w-full transition-all duration-300"></span>
@@ -37,8 +36,10 @@ function Navbar() {
 
         {/* Botones */}
         <div className="flex items-center gap-3">
-          
-          <Button className="bg-green-600 text-white hover:bg-green-700 hover:scale-105 hover:shadow-xl transition-all duration-300">
+          <Button 
+            onClick={() => window.location.href = '/login'}
+            className="bg-green-600 text-white hover:bg-green-700 hover:scale-105 hover:shadow-xl transition-all duration-300"
+          >
             Login 
           </Button>
         </div>
