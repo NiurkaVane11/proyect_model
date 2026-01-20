@@ -21,7 +21,7 @@ function App() {
       <HowItWorks />
       
       {/* Espaciador decorativo */}
-      <div className="h-16 bg-gradient-to-b  from-white to-gray-50"></div>
+      <div className="h-16 bg-gradient-to-b from-white to-gray-50"></div>
       
       <Footer />
     </div>

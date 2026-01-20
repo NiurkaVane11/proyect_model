@@ -1,17 +1,33 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Lock, Mail } from 'lucide-react'
+import { Lock, Mail, AlertCircle } from 'lucide-react'
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // CREDENCIALES TEMPORALES (solo para desarrollo)
+  const TEMP_EMAIL = 'admin@infopan.com';
+  const TEMP_PASSWORD = 'admin123';
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Aquí irá la lógica de autenticación con el backend
-    console.log('Login:', { email, password });
+    setError('');
+
+    // Validación temporal
+    if (email === TEMP_EMAIL && password === TEMP_PASSWORD) {
+      console.log('Login exitoso');
+      // Redirigir al panel de administración
+      navigate('/admin');
+    } else {
+      setError('Correo o contraseña incorrectos');
+      console.log('Login fallido:', { email, password });
+    }
   };
 
   return (
@@ -46,6 +62,14 @@ function Login() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Mensaje de error */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
               {/* Email */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -91,8 +115,15 @@ function Login() {
               </Button>
             </form>
 
+            {/* Credenciales temporales (SOLO PARA DESARROLLO) */}
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800 font-semibold mb-1">🔧 Credenciales Temporales (Desarrollo):</p>
+              <p className="text-xs text-blue-700">Email: admin@infopan.com</p>
+              <p className="text-xs text-blue-700">Contraseña: admin123</p>
+            </div>
+
             {/* Nota informativa */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs text-gray-600 text-center">
                 🔒 Acceso restringido solo para personal autorizado de INFOPAN Ecuador. 
                 No hay registro público disponible.
@@ -101,12 +132,12 @@ function Login() {
 
             {/* Link para volver */}
             <div className="text-center mt-6">
-              <a 
-                href="/" 
+              <button 
+                onClick={() => navigate('/')}
                 className="text-green-600 hover:text-green-700 font-medium text-sm transition-colors"
               >
                 ← Volver al sitio público
-              </a>
+              </button>
             </div>
           </CardContent>
         </Card>
