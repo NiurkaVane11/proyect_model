@@ -11,19 +11,47 @@ function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // CREDENCIALES TEMPORALES (solo para desarrollo)
-  const TEMP_EMAIL = 'admin@infopan.com';
-  const TEMP_PASSWORD = 'admin123';
+  // USUARIOS TEMPORALES (solo para desarrollo)
+  const USERS = {
+    admin: {
+      email: 'admin@infopan.com',
+      password: 'admin123',
+      role: 'administrador',
+      name: 'Administrador'
+    },
+    gerente: {
+      email: 'gerente@infopan.com',
+      password: 'gerente123',
+      role: 'gerente',
+      name: 'Gerente'
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
 
-    // Validación temporal
-    if (email === TEMP_EMAIL && password === TEMP_PASSWORD) {
-      console.log('Login exitoso');
-      // Redirigir al panel de administración
-      navigate('/admin');
+    // Buscar usuario
+    const user = Object.values(USERS).find(
+      u => u.email === email && u.password === password
+    );
+
+    if (user) {
+      console.log('Login exitoso:', user);
+      
+      // Guardar datos del usuario en localStorage
+      localStorage.setItem('user', JSON.stringify({
+        email: user.email,
+        role: user.role,
+        name: user.name
+      }));
+
+      // Redirigir según el rol
+      if (user.role === 'administrador') {
+        navigate('/admin');
+      } else if (user.role === 'gerente') {
+        navigate('/gerente');
+      }
     } else {
       setError('Correo o contraseña incorrectos');
       console.log('Login fallido:', { email, password });
@@ -54,9 +82,9 @@ function Login() {
                 <Lock className="w-8 h-8 text-green-600" />
               </div>
             </div>
-            <CardTitle className="text-2xl font-black">Acceso Administrativo</CardTitle>
+            <CardTitle className="text-2xl font-black">Acceso al Sistema</CardTitle>
             <CardDescription className="text-gray-600">
-              Ingresa tus credenciales para acceder al panel
+              Ingresa tus credenciales para acceder
             </CardDescription>
           </CardHeader>
 
@@ -81,7 +109,7 @@ function Login() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@infopan.com"
+                    placeholder="usuario@infopan.com"
                     required
                     className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent transition-all"
                   />
@@ -116,17 +144,24 @@ function Login() {
             </form>
 
             {/* Credenciales temporales (SOLO PARA DESARROLLO) */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800 font-semibold mb-1">🔧 Credenciales Temporales (Desarrollo):</p>
-              <p className="text-xs text-blue-700">Email: admin@infopan.com</p>
-              <p className="text-xs text-blue-700">Contraseña: admin123</p>
+            <div className="mt-4 space-y-2">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800 font-semibold mb-1">👨‍💼 Administrador:</p>
+                <p className="text-xs text-blue-700">Email: admin@infopan.com</p>
+                <p className="text-xs text-blue-700">Contraseña: admin123</p>
+              </div>
+              
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                <p className="text-xs text-purple-800 font-semibold mb-1">👔 Gerente:</p>
+                <p className="text-xs text-purple-700">Email: gerente@infopan.com</p>
+                <p className="text-xs text-purple-700">Contraseña: gerente123</p>
+              </div>
             </div>
 
             {/* Nota informativa */}
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs text-gray-600 text-center">
-                🔒 Acceso restringido solo para personal autorizado de INFOPAN Ecuador. 
-                No hay registro público disponible.
+                🔒 Acceso restringido solo para personal autorizado de INFOPAN Ecuador.
               </p>
             </div>
 
