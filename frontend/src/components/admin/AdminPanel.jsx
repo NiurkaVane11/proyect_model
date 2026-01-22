@@ -3,7 +3,7 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import Dashboard from './Dashboard';
 import Anunciantes from './Anunciantes';
-import Campanas from './Campanas';
+import Donaciones from './Donaciones';
 import Panaderias from './Panaderias';
 import Distribucion from './Distribucion';
 import Pagos from './Pagos';
@@ -27,8 +27,8 @@ const AdminPanel = () => {
         return <Dashboard />;
       case 'anunciantes':
         return <Anunciantes />;
-      case 'campanas':
-        return <Campanas />;
+      case 'donaciones':
+        return <Donaciones />;
       case 'panaderias':
         return <Panaderias />;
       case 'distribucion':

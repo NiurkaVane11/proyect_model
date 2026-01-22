@@ -16,11 +16,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection,
   const menuItems = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'anunciantes', name: 'Anunciantes', icon: Megaphone },
-    { id: 'campanas', name: 'Campañas', icon: Radio },
+    { id: 'donaciones', name: 'Donaciones', icon: Radio },
     { id: 'panaderias', name: 'Panaderías', icon: Store },
     { id: 'distribucion', name: 'Distribución', icon: Package },
     { id: 'pagos', name: 'Pagos', icon: DollarSign },
-    { id: 'facturacion', name: 'Facturación', icon: FileText },
     { id: 'impacto', name: 'Impacto Ambiental', icon: Leaf },
   ];
 

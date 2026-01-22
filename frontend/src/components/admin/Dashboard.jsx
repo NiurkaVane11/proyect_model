@@ -25,14 +25,7 @@ const Dashboard = () => {
       gradient: 'from-blue-500 to-blue-600',
       trendIcon: TrendingUp
     },
-    {
-      title: 'Campañas Activas',
-      value: '15',
-      trend: '3 finalizan pronto',
-      icon: Radio,
-      gradient: 'from-purple-500 to-purple-600',
-      trendIcon: Activity
-    },
+   
     {
       title: 'Panaderías Aliadas',
       value: '127',

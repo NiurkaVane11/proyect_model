@@ -145,54 +145,7 @@ const ImpactoAmbiental = () => {
         </div>
       </div>
 
-      {/* Environmental Benefits */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg border border-green-200/50 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-green-600 rounded-xl">
-              <Leaf size={24} className="text-white" />
-            </div>
-            <h3 className="text-2xl font-black text-gray-900">Beneficios Ambientales</h3>
-          </div>
-          <ul className="space-y-4">
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-              <p className="text-gray-700"><strong>Reducción de residuos:</strong> Las bolsas reciclables disminuyen significativamente la cantidad de desechos plásticos.</p>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-              <p className="text-gray-700"><strong>Economía circular:</strong> Promovemos el uso de materiales reciclados y reciclables.</p>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
-              <p className="text-gray-700"><strong>Conciencia ambiental:</strong> Educamos a la comunidad sobre el impacto del consumo responsable.</p>
-            </li>
-          </ul>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg border border-blue-200/50 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-blue-600 rounded-xl">
-              <Award size={24} className="text-white" />
-            </div>
-            <h3 className="text-2xl font-black text-gray-900">Nuestro Compromiso</h3>
-          </div>
-          <ul className="space-y-4">
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-              <p className="text-gray-700"><strong>100% reciclables:</strong> Todas nuestras bolsas están hechas de materiales completamente reciclables.</p>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-              <p className="text-gray-700"><strong>Proveedores certificados:</strong> Trabajamos solo con proveedores que cumplen estándares ambientales.</p>
-            </li>
-            <li className="flex items-start gap-3">
-              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
-              <p className="text-gray-700"><strong>Medición continua:</strong> Monitoreamos constantemente nuestro impacto ambiental.</p>
-            </li>
-          </ul>
-        </div>
-      </div>
+      
     </div>
   );
 };
