@@ -5,7 +5,7 @@ const pool = require('../config/database');
 // GET - Obtener todos los anunciantes
 router.get('/', async (req, res) => {
   try {
-    const rows = await pool.query('SELECT * FROM anunciantes');
+    const rows = await pool.query('SELECT * FROM anunciantes ORDER BY id_anunciante DESC');
     res.json({
       success: true,
       data: rows
@@ -73,20 +73,38 @@ router.post('/', async (req, res) => {
       observaciones
     } = req.body;
 
+    console.log('Datos recibidos:', req.body);
+
     const result = await pool.query(
       `INSERT INTO anunciantes (
         razon_social, nombre_comercial, ruc, sector_comercial,
         nombre_contacto, cargo_contacto, telefono, celular, email,
         direccion, ciudad, provincia, sitio_web, redes_sociales,
-        forma_pago_preferida, limite_credito, observaciones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        forma_pago_preferida, limite_credito, observaciones, usuario_registro
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        razon_social, nombre_comercial, ruc, sector_comercial,
-        nombre_contacto, cargo_contacto, telefono, celular, email,
-        direccion, ciudad, provincia, sitio_web, redes_sociales,
-        forma_pago_preferida, limite_credito, observaciones
+        razon_social, 
+        nombre_comercial, 
+        ruc, 
+        sector_comercial,
+        nombre_contacto, 
+        cargo_contacto, 
+        telefono, 
+        celular, 
+        email,
+        direccion, 
+        ciudad, 
+        provincia, 
+        sitio_web, 
+        redes_sociales,
+        forma_pago_preferida, 
+        limite_credito, 
+        observaciones,
+        'admin'
       ]
     );
+
+    console.log('Anunciante creado con ID:', result.insertId);
 
     res.status(201).json({
       success: true,
@@ -95,10 +113,15 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error al crear anunciante:', error);
+    console.error('Detalles del error:', error.message);
+    console.error('SQL State:', error.sqlState);
+    console.error('SQL Message:', error.sqlMessage);
+    
     res.status(500).json({
       success: false,
       message: 'Error al crear anunciante',
-      error: error.message
+      error: error.message,
+      details: error.sqlMessage || error.toString()
     });
   }
 });
@@ -108,6 +131,10 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
+    
+    // Remover campos que no se deben actualizar
+    delete updates.id_anunciante;
+    delete updates.fecha_registro;
     
     const fields = Object.keys(updates)
       .map(key => `${key} = ?`)
@@ -133,29 +160,3 @@ router.put('/:id', async (req, res) => {
     });
   }
 });
-
-// DELETE - Eliminar anunciante
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    await pool.query(
-      'DELETE FROM anunciantes WHERE id_anunciante = ?',
-      [id]
-    );
-
-    res.json({
-      success: true,
-      message: 'Anunciante eliminado exitosamente'
-    });
-  } catch (error) {
-    console.error('Error al eliminar anunciante:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al eliminar anunciante',
-      error: error.message
-    });
-  }
-});
-
-module.exports = router;

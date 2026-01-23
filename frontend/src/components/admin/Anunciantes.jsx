@@ -7,6 +7,7 @@ function Anunciantes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     razon_social: '',
     nombre_comercial: '',
@@ -54,7 +55,6 @@ function Anunciantes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validación básica
     if (!formData.razon_social || !formData.ruc || !formData.email) {
       alert('Por favor completa los campos obligatorios: Razón Social, RUC y Email');
       return;
@@ -62,14 +62,22 @@ function Anunciantes() {
 
     try {
       setSaving(true);
-      await anunciantesService.create(formData);
-      alert('✅ Anunciante creado exitosamente');
+      
+      if (editingId) {
+        await anunciantesService.update(editingId, formData);
+        alert('✅ Anunciante actualizado exitosamente');
+      } else {
+        await anunciantesService.create(formData);
+        alert('✅ Anunciante creado exitosamente');
+      }
+      
       setShowModal(false);
+      setEditingId(null);
       resetForm();
-      fetchAnunciantes(); // Recargar lista
+      fetchAnunciantes();
     } catch (err) {
       console.error('Error al guardar:', err);
-      alert('❌ Error al crear anunciante: ' + (err.response?.data?.message || err.message));
+      alert('❌ Error: ' + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }
@@ -96,7 +104,68 @@ function Anunciantes() {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setEditingId(null);
     resetForm();
+  };
+
+  const handleView = (anunciante) => {
+    alert(
+      `📋 DETALLES DEL ANUNCIANTE\n\n` +
+      `Razón Social: ${anunciante.razon_social}\n` +
+      `Nombre Comercial: ${anunciante.nombre_comercial || 'N/A'}\n` +
+      `RUC: ${anunciante.ruc}\n` +
+      `Sector: ${anunciante.sector_comercial || 'N/A'}\n\n` +
+      `Contacto: ${anunciante.nombre_contacto || 'N/A'}\n` +
+      `Cargo: ${anunciante.cargo_contacto || 'N/A'}\n` +
+      `Email: ${anunciante.email}\n` +
+      `Teléfono: ${anunciante.telefono || 'N/A'}\n` +
+      `Celular: ${anunciante.celular || 'N/A'}\n\n` +
+      `Ciudad: ${anunciante.ciudad || 'N/A'}\n` +
+      `Provincia: ${anunciante.provincia || 'N/A'}\n` +
+      `Dirección: ${anunciante.direccion || 'N/A'}\n\n` +
+      `Sitio Web: ${anunciante.sitio_web || 'N/A'}\n` +
+      `Estado: ${anunciante.estado}`
+    );
+  };
+
+  const handleEdit = (anunciante) => {
+    setFormData({
+      razon_social: anunciante.razon_social || '',
+      nombre_comercial: anunciante.nombre_comercial || '',
+      ruc: anunciante.ruc || '',
+      sector_comercial: anunciante.sector_comercial || '',
+      nombre_contacto: anunciante.nombre_contacto || '',
+      cargo_contacto: anunciante.cargo_contacto || '',
+      telefono: anunciante.telefono || '',
+      celular: anunciante.celular || '',
+      email: anunciante.email || '',
+      direccion: anunciante.direccion || '',
+      ciudad: anunciante.ciudad || '',
+      provincia: anunciante.provincia || '',
+      sitio_web: anunciante.sitio_web || '',
+      observaciones: anunciante.observaciones || ''
+    });
+    
+    setEditingId(anunciante.id_anunciante);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (anunciante) => {
+    if (!window.confirm(
+      `¿Estás seguro de eliminar a "${anunciante.razon_social}"?\n\n` +
+      `Esta acción no se puede deshacer.`
+    )) {
+      return;
+    }
+
+    try {
+      await anunciantesService.delete(anunciante.id_anunciante);
+      alert('✅ Anunciante eliminado exitosamente');
+      fetchAnunciantes();
+    } catch (err) {
+      console.error('Error al eliminar:', err);
+      alert('❌ Error al eliminar: ' + (err.response?.data?.message || err.message));
+    }
   };
 
   if (loading) {
@@ -196,9 +265,43 @@ function Anunciantes() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      Ver detalles
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* Botón Ver */}
+                      <button
+                        onClick={() => handleView(anunciante)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Ver detalles"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                      </button>
+
+                      {/* Botón Editar */}
+                      <button
+                        onClick={() => handleEdit(anunciante)}
+                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                      </button>
+
+                      {/* Botón Eliminar */}
+                      <button
+                        onClick={() => handleDelete(anunciante)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Eliminar"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -213,7 +316,9 @@ function Anunciantes() {
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center sticky top-0">
-              <h2 className="text-2xl font-bold">Nuevo Anunciante</h2>
+              <h2 className="text-2xl font-bold">
+                {editingId ? 'Editar Anunciante' : 'Nuevo Anunciante'}
+              </h2>
               <button
                 onClick={handleCloseModal}
                 className="text-white hover:bg-blue-700 p-2 rounded"
@@ -464,7 +569,7 @@ function Anunciantes() {
                   disabled={saving}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-blue-300"
                 >
-                  {saving ? 'Guardando...' : 'Guardar Anunciante'}
+                  {saving ? 'Guardando...' : (editingId ? 'Actualizar' : 'Guardar Anunciante')}
                 </button>
               </div>
             </form>

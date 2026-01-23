@@ -40,6 +40,7 @@ const AdminPanel = () => {
         return <ImpactoAmbiental />;
       case 'inventario':
         return <Inventario />;
+        
       default:
         return <Dashboard />;
     }
