@@ -1,165 +1,478 @@
-import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Filter, Download, Megaphone, TrendingUp, DollarSign, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { anunciantesService } from '../../services/api';
+import { X } from 'lucide-react';
 
-const Anunciantes = () => {
-  const [searchTerm, setSearchTerm] = useState('');
+function Anunciantes() {
+  const [anunciantes, setAnunciantes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    razon_social: '',
+    nombre_comercial: '',
+    ruc: '',
+    sector_comercial: '',
+    nombre_contacto: '',
+    cargo_contacto: '',
+    telefono: '',
+    celular: '',
+    email: '',
+    direccion: '',
+    ciudad: '',
+    provincia: '',
+    sitio_web: '',
+    observaciones: ''
+  });
+  const [saving, setSaving] = useState(false);
 
-  const anunciantes = [
-    { id: 1, nombre: 'Coca-Cola Ecuador', contacto: 'Juan Pérez', email: 'juan@cocacola.com', telefono: '098-765-4321', campañasActivas: 3, inversionTotal: '$15,000', estado: 'Activo' },
-    { id: 2, nombre: 'Nestlé', contacto: 'María González', email: 'maria@nestle.com', telefono: '099-123-4567', campañasActivas: 2, inversionTotal: '$12,500', estado: 'Activo' },
-    { id: 3, nombre: 'Pronaca', contacto: 'Carlos Ramírez', email: 'carlos@pronaca.com', telefono: '097-888-9999', campañasActivas: 1, inversionTotal: '$8,000', estado: 'Activo' },
-    { id: 4, nombre: 'La Fabril', contacto: 'Ana Torres', email: 'ana@lafabril.com', telefono: '096-555-4444', campañasActivas: 0, inversionTotal: '$0', estado: 'Inactivo' },
-    { id: 5, nombre: 'Supermaxi', contacto: 'Luis Morales', email: 'luis@supermaxi.com', telefono: '095-222-3333', campañasActivas: 4, inversionTotal: '$20,000', estado: 'Activo' },
-  ];
+  useEffect(() => {
+    fetchAnunciantes();
+  }, []);
 
-  const filteredAnunciantes = anunciantes.filter(a => 
-    a.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.contacto.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchAnunciantes = async () => {
+    try {
+      setLoading(true);
+      const response = await anunciantesService.getAll();
+      setAnunciantes(response.data.data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validación básica
+    if (!formData.razon_social || !formData.ruc || !formData.email) {
+      alert('Por favor completa los campos obligatorios: Razón Social, RUC y Email');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await anunciantesService.create(formData);
+      alert('✅ Anunciante creado exitosamente');
+      setShowModal(false);
+      resetForm();
+      fetchAnunciantes(); // Recargar lista
+    } catch (err) {
+      console.error('Error al guardar:', err);
+      alert('❌ Error al crear anunciante: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      razon_social: '',
+      nombre_comercial: '',
+      ruc: '',
+      sector_comercial: '',
+      nombre_contacto: '',
+      cargo_contacto: '',
+      telefono: '',
+      celular: '',
+      email: '',
+      direccion: '',
+      ciudad: '',
+      provincia: '',
+      sitio_web: '',
+      observaciones: ''
+    });
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-xl">⏳ Cargando anunciantes...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          ❌ Error: {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="p-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-4xl font-black text-gray-900 mb-2">Anunciantes</h2>
-          <p className="text-gray-600">Gestiona empresas y marcas anunciantes</p>
-        </div>
-        <button className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold">
-          <Plus size={20} />
-          Nuevo Anunciante
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">📢 Anunciantes</h1>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+        >
+          + Nuevo Anunciante
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <Megaphone size={28} />
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Total</span>
-          </div>
-          <p className="text-3xl font-black mb-1">{anunciantes.length}</p>
-          <p className="text-sm opacity-90">Anunciantes Registrados</p>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-blue-500 text-white p-6 rounded-lg shadow">
+          <div className="text-4xl font-bold">{anunciantes.length}</div>
+          <div className="text-lg mt-1">Anunciantes Registrados</div>
         </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <TrendingUp size={28} />
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Activos</span>
+        <div className="bg-green-500 text-white p-6 rounded-lg shadow">
+          <div className="text-4xl font-bold">
+            {anunciantes.filter(a => a.estado === 'activo').length}
           </div>
-          <p className="text-3xl font-black mb-1">{anunciantes.filter(a => a.estado === 'Activo').length}</p>
-          <p className="text-sm opacity-90">Con Campañas Activas</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <DollarSign size={28} />
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Total</span>
-          </div>
-          <p className="text-3xl font-black mb-1">$55.5K</p>
-          <p className="text-sm opacity-90">Inversión Total</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <Users size={28} />
-            <span className="text-xs bg-white/20 px-2 py-1 rounded-lg">Promedio</span>
-          </div>
-          <p className="text-3xl font-black mb-1">2.0</p>
-          <p className="text-sm opacity-90">Campañas por Cliente</p>
-        </div>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por nombre o contacto..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
-          </div>
-          <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center gap-2 transition-all font-semibold text-gray-700">
-            <Filter size={20} />
-            Filtros
-          </button>
-          <button className="px-6 py-3 bg-green-100 hover:bg-green-200 rounded-xl flex items-center gap-2 transition-all font-semibold text-green-700">
-            <Download size={20} />
-            Exportar
-          </button>
+          <div className="text-lg mt-1">Con Campañas Activas</div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-gray-200">
+      {anunciantes.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500 text-lg">No hay anunciantes registrados</p>
+          <button
+            onClick={() => setShowModal(true)}
+            className="mt-4 text-blue-600 hover:underline font-semibold"
+          >
+            + Agregar el primero
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <table className="min-w-full">
+            <thead className="bg-gray-100">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Empresa</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Contacto</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Email</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Teléfono</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Campañas</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Inversión</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Estado</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Acciones</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Empresa</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Contacto</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Email</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Teléfono</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Ciudad</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Estado</th>
+                <th className="px-6 py-3 text-left text-sm font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredAnunciantes.map((anunciante) => (
-                <tr key={anunciante.id} className="hover:bg-green-50/50 transition-colors">
+              {anunciantes.map((anunciante) => (
+                <tr key={anunciante.id_anunciante} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center text-white font-bold">
-                        {anunciante.nombre.charAt(0)}
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 font-bold text-green-700">
+                        {anunciante.razon_social?.[0] || 'A'}
                       </div>
-                      <span className="font-semibold text-gray-800">{anunciante.nombre}</span>
+                      <div>
+                        <div className="font-medium">{anunciante.razon_social}</div>
+                        <div className="text-sm text-gray-500">{anunciante.nombre_comercial}</div>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-gray-700">{anunciante.contacto}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{anunciante.email}</td>
-                  <td className="px-6 py-4 text-gray-600 text-sm">{anunciante.telefono}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-lg font-bold text-sm">
-                      {anunciante.campañasActivas}
-                    </span>
+                  <td className="px-6 py-4">
+                    <div>{anunciante.nombre_contacto}</div>
+                    <div className="text-sm text-gray-500">{anunciante.cargo_contacto}</div>
                   </td>
-                  <td className="px-6 py-4 text-center font-semibold text-gray-800">{anunciante.inversionTotal}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      anunciante.estado === 'Activo' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-gray-100 text-gray-600'
+                  <td className="px-6 py-4 text-sm">{anunciante.email}</td>
+                  <td className="px-6 py-4 text-sm">{anunciante.telefono}</td>
+                  <td className="px-6 py-4 text-sm">{anunciante.ciudad}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      anunciante.estado === 'activo' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
                     }`}>
                       {anunciante.estado}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors">
-                        <Eye size={18} />
-                      </button>
-                      <button className="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors">
-                        <Edit size={18} />
-                      </button>
-                      <button className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      Ver detalles
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center sticky top-0">
+              <h2 className="text-2xl font-bold">Nuevo Anunciante</h2>
+              <button
+                onClick={handleCloseModal}
+                className="text-white hover:bg-blue-700 p-2 rounded"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Razón Social */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Razón Social <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="razon_social"
+                    value={formData.razon_social}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ej: Coca-Cola Ecuador S.A."
+                  />
+                </div>
+
+                {/* Nombre Comercial */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Nombre Comercial
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre_comercial"
+                    value={formData.nombre_comercial}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ej: Coca-Cola"
+                  />
+                </div>
+
+                {/* RUC */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    RUC <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="ruc"
+                    value={formData.ruc}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1234567890001"
+                    maxLength="13"
+                  />
+                </div>
+
+                {/* Sector Comercial */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Sector Comercial
+                  </label>
+                  <select
+                    name="sector_comercial"
+                    value={formData.sector_comercial}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="Alimentos">Alimentos</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Tecnología">Tecnología</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Servicios">Servicios</option>
+                    <option value="Telecomunicaciones">Telecomunicaciones</option>
+                    <option value="Farmacéutico">Farmacéutico</option>
+                    <option value="Automotriz">Automotriz</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+
+                {/* Nombre Contacto */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Nombre del Contacto
+                  </label>
+                  <input
+                    type="text"
+                    name="nombre_contacto"
+                    value={formData.nombre_contacto}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Juan Pérez"
+                  />
+                </div>
+
+                {/* Cargo Contacto */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Cargo del Contacto
+                  </label>
+                  <input
+                    type="text"
+                    name="cargo_contacto"
+                    value={formData.cargo_contacto}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Gerente Comercial"
+                  />
+                </div>
+
+                {/* Teléfono */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Teléfono
+                  </label>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="042345678"
+                  />
+                </div>
+
+                {/* Celular */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Celular
+                  </label>
+                  <input
+                    type="tel"
+                    name="celular"
+                    value={formData.celular}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0998765432"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="contacto@empresa.com"
+                  />
+                </div>
+
+                {/* Ciudad */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Ciudad
+                  </label>
+                  <input
+                    type="text"
+                    name="ciudad"
+                    value={formData.ciudad}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Guayaquil"
+                  />
+                </div>
+
+                {/* Provincia */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Provincia
+                  </label>
+                  <input
+                    type="text"
+                    name="provincia"
+                    value={formData.provincia}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Guayas"
+                  />
+                </div>
+
+                {/* Sitio Web */}
+                <div>
+                  <label className="block text-sm font-semibold mb-2">
+                    Sitio Web
+                  </label>
+                  <input
+                    type="url"
+                    name="sitio_web"
+                    value={formData.sitio_web}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="https://www.empresa.com"
+                  />
+                </div>
+
+                {/* Dirección */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-2">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    name="direccion"
+                    value={formData.direccion}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Av. Principal 123 y Calle Secundaria"
+                  />
+                </div>
+
+                {/* Observaciones */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-2">
+                    Observaciones
+                  </label>
+                  <textarea
+                    name="observaciones"
+                    value={formData.observaciones}
+                    onChange={handleInputChange}
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Información adicional..."
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-blue-300"
+                >
+                  {saving ? 'Guardando...' : 'Guardar Anunciante'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default Anunciantes;
