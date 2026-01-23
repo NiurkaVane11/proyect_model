@@ -1,177 +1,289 @@
-import { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Store, MapPin, Phone, Mail, CheckCircle, XCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+  Plus, Search, Edit, Trash2, Eye, Store, MapPin,
+  Phone, Mail, CheckCircle, XCircle, AlertCircle,
+  X, Calendar, Clock, Building
+} from 'lucide-react';
+import { panaderiasService } from '../../services/api';
 
 const Panaderias = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [panaderias, setPanaderias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const panaderias = [
-    { id: 1, nombre: 'Panadería El Sol', direccion: 'Av. 6 de Diciembre N34-123', sector: 'Norte', contacto: 'Pedro López', telefono: '098-765-4321', email: 'elsol@gmail.com', bolsasEntregadas: 4500, estado: 'Activa' },
-    { id: 2, nombre: 'Pan de Casa', direccion: 'Calle García Moreno 45-67', sector: 'Centro', contacto: 'Ana Martínez', telefono: '099-888-7777', email: 'pandecasa@gmail.com', bolsasEntregadas: 3200, estado: 'Activa' },
-    { id: 3, nombre: 'Panadería La Moderna', direccion: 'Av. Mariscal Sucre 12-34', sector: 'Sur', contacto: 'Jorge Ruiz', telefono: '097-555-6666', email: 'lamoderna@gmail.com', bolsasEntregadas: 5100, estado: 'Activa' },
-    { id: 4, nombre: 'Dulce Pan', direccion: 'Av. González Suárez 78-90', sector: 'Norte', contacto: 'María Sánchez', telefono: '096-444-5555', email: 'dulcepan@gmail.com', bolsasEntregadas: 2800, estado: 'Activa' },
-    { id: 5, nombre: 'Pan Caliente', direccion: 'Calle Manabí 23-45', sector: 'Valle', contacto: 'Luis Gómez', telefono: '095-333-4444', email: 'pancaliente@gmail.com', bolsasEntregadas: 1200, estado: 'Inactiva' },
-    { id: 6, nombre: 'Panadería Tradicional', direccion: 'Av. América 56-78', sector: 'Centro', contacto: 'Carmen Torres', telefono: '094-222-3333', email: 'tradicional@gmail.com', bolsasEntregadas: 3900, estado: 'Activa' },
-  ];
+  const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [modalMode, setModalMode] = useState('create');
+  const [selectedPanaderia, setSelectedPanaderia] = useState(null);
 
-  const filteredPanaderias = panaderias.filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.contacto.toLowerCase().includes(searchTerm.toLowerCase())
+  const [formData, setFormData] = useState({
+    nombre_comercial: '',
+    razon_social: '',
+    ruc: '',
+    tipo_local: '',
+    nombre_contacto: '',
+    cargo_contacto: '',
+    telefono: '',
+    celular: '',
+    email: '',
+    direccion: '',
+    ciudad: '',
+    provincia: '',
+    referencia_ubicacion: '',
+    cantidad_bolsas_mensual: '',
+    fecha_inicio_servicio: '',
+    horario_atencion: '',
+    estado: 'activo',
+    observaciones: ''
+  });
+
+  /* =========================
+     CARGAR DATOS
+  ========================== */
+  useEffect(() => {
+    cargarPanaderias();
+  }, []);
+
+  const cargarPanaderias = async () => {
+    try {
+      setLoading(true);
+      const res = await panaderiasService.getAll();
+      const data = res.data?.data || res.data || [];
+      setPanaderias(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError('Error al cargar las panaderías');
+      setPanaderias([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =========================
+     HANDLERS
+  ========================== */
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nombre_comercial: '',
+      razon_social: '',
+      ruc: '',
+      tipo_local: '',
+      nombre_contacto: '',
+      cargo_contacto: '',
+      telefono: '',
+      celular: '',
+      email: '',
+      direccion: '',
+      ciudad: '',
+      provincia: '',
+      referencia_ubicacion: '',
+      cantidad_bolsas_mensual: '',
+      fecha_inicio_servicio: '',
+      horario_atencion: '',
+      estado: 'activo',
+      observaciones: ''
+    });
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    setModalMode('create');
+    setShowModal(true);
+  };
+
+  const handleEdit = (p) => {
+    setSelectedPanaderia(p);
+    setModalMode('edit');
+    setFormData({ ...p });
+    setShowModal(true);
+  };
+
+  const handleView = (p) => {
+    setSelectedPanaderia(p);
+    setShowViewModal(true);
+  };
+
+  const handleSubmit = async () => {
+    if (
+      !formData.nombre_comercial.trim() ||
+      !formData.nombre_contacto.trim() ||
+      !formData.telefono.trim() ||
+      !formData.direccion.trim() ||
+      !formData.ciudad.trim() ||
+      !formData.provincia.trim()
+    ) {
+      alert('Completa todos los campos obligatorios (*)');
+      return;
+    }
+
+    try {
+      if (modalMode === 'create') {
+        await panaderiasService.create(formData);
+      } else {
+        await panaderiasService.update(
+          selectedPanaderia.id_panaderia,
+          formData
+        );
+      }
+      setShowModal(false);
+      resetForm();
+      cargarPanaderias();
+    } catch (err) {
+      console.error(err);
+      alert('Error al guardar la panadería');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar esta panadería?')) return;
+    try {
+      await panaderiasService.delete(id);
+      cargarPanaderias();
+    } catch (err) {
+      alert('Error al eliminar');
+    }
+  };
+
+  /* =========================
+     DERIVADOS
+  ========================== */
+  const filteredPanaderias = panaderias.filter(p =>
+    p.nombre_comercial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.ciudad?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.nombre_contacto?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const panaderiasActivas = panaderias.filter(p => p.estado === 'Activa').length;
-  const bolsasTotales = panaderias.reduce((acc, p) => acc + p.bolsasEntregadas, 0);
-  const promedioXPanaderia = Math.round(bolsasTotales / panaderias.length);
+  const panaderiasActivas = panaderias.filter(p => p.estado === 'activo').length;
+  const bolsasTotales = panaderias.reduce(
+    (acc, p) => acc + Number(p.cantidad_bolsas_mensual || 0), 0
+  );
+  const promedioXPanaderia = panaderias.length
+    ? Math.round(bolsasTotales / panaderias.length)
+    : 0;
 
-  return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-4xl font-black text-gray-900 mb-2">Panaderías Aliadas</h2>
-          <p className="text-gray-600">Red de distribución de bolsas publicitarias</p>
+  /* =========================
+     LOADING / ERROR
+  ========================== */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin h-12 w-12 border-b-2 border-green-600 rounded-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-300 p-4 rounded-xl flex gap-3">
+          <AlertCircle className="text-red-600" />
+          <div>
+            <h3 className="font-bold text-red-700">Error</h3>
+            <p>{error}</p>
+          </div>
         </div>
-        <button className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold">
-          <Plus size={20} />
-          Nueva Panadería
+      </div>
+    );
+  }
+
+  /* =========================
+     RENDER
+  ========================== */
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-black">Panaderías Aliadas</h1>
+        <button
+          onClick={handleCreate}
+          className="bg-green-600 text-white px-5 py-3 rounded-xl flex items-center gap-2"
+        >
+          <Plus size={18} /> Nueva Panadería
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <Store size={28} />
-          </div>
-          <p className="text-3xl font-black mb-1">{panaderias.length}</p>
-          <p className="text-sm opacity-90">Total Panaderías</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <CheckCircle size={28} />
-          </div>
-          <p className="text-3xl font-black mb-1">{panaderiasActivas}</p>
-          <p className="text-sm opacity-90">Activas</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <MapPin size={28} />
-          </div>
-          <p className="text-3xl font-black mb-1">4</p>
-          <p className="text-sm opacity-90">Sectores Cubiertos</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <Store size={28} />
-          </div>
-          <p className="text-3xl font-black mb-1">{promedioXPanaderia.toLocaleString()}</p>
-          <p className="text-sm opacity-90">Promedio Bolsas</p>
-        </div>
+      {/* SEARCH */}
+      <div className="mb-6">
+        <input
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          placeholder="Buscar..."
+          className="w-full p-3 border rounded-xl"
+        />
       </div>
 
-      {/* Search */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 mb-6">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, sector o contacto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Panadería</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Dirección</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Sector</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Contacto</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Bolsas Entregadas</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Estado</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Acciones</th>
+      {/* TABLE */}
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-green-50">
+            <tr>
+              <th className="p-4 text-left">Nombre</th>
+              <th className="p-4">Ciudad</th>
+              <th className="p-4">Contacto</th>
+              <th className="p-4">Bolsas</th>
+              <th className="p-4">Estado</th>
+              <th className="p-4">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredPanaderias.map(p => (
+              <tr key={p.id_panaderia} className="border-t">
+                <td className="p-4">{p.nombre_comercial}</td>
+                <td className="p-4">{p.ciudad}</td>
+                <td className="p-4">{p.nombre_contacto}</td>
+                <td className="p-4 text-center">{p.cantidad_bolsas_mensual}</td>
+                <td className="p-4 text-center">
+                  {p.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </td>
+                <td className="p-4 flex gap-2 justify-center">
+                  <button onClick={() => handleView(p)}><Eye size={16} /></button>
+                  <button onClick={() => handleEdit(p)}><Edit size={16} /></button>
+                  <button onClick={() => handleDelete(p.id_panaderia)}><Trash2 size={16} /></button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredPanaderias.map((panaderia) => (
-                <tr key={panaderia.id} className="hover:bg-green-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white">
-                        <Store size={20} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800">{panaderia.nombre}</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                          <Phone size={12} />
-                          {panaderia.telefono}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-start gap-2">
-                      <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-gray-700">{panaderia.direccion}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                      {panaderia.sector}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="font-semibold text-gray-800 text-sm">{panaderia.contacto}</p>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-                        <Mail size={12} />
-                        {panaderia.email}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-lg font-black text-green-600">
-                      {panaderia.bolsasEntregadas.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
-                      panaderia.estado === 'Activa' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {panaderia.estado === 'Activa' ? <CheckCircle size={14} /> : <XCircle size={14} />}
-                      {panaderia.estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors">
-                        <Eye size={18} />
-                      </button>
-                      <button className="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors">
-                        <Edit size={18} />
-                      </button>
-                      <button className="p-2 hover:bg-red-100 text-red-600 rounded-lg transition-colors">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      {/* MODAL CREAR / EDITAR */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white max-w-4xl w-full rounded-xl p-6 overflow-y-auto max-h-[90vh]">
+            <h2 className="text-xl font-bold mb-4">
+              {modalMode === 'create' ? 'Nueva Panadería' : 'Editar Panadería'}
+            </h2>
+
+            {/* FORM */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input name="nombre_comercial" value={formData.nombre_comercial} onChange={handleInputChange} placeholder="Nombre Comercial *" className="input" />
+              <input name="razon_social" value={formData.razon_social} onChange={handleInputChange} placeholder="Razón Social" className="input" />
+              <input name="ruc" value={formData.ruc} onChange={handleInputChange} placeholder="RUC" className="input" />
+              <input name="tipo_local" value={formData.tipo_local} onChange={handleInputChange} placeholder="Tipo de Local" className="input" />
+              <input name="nombre_contacto" value={formData.nombre_contacto} onChange={handleInputChange} placeholder="Contacto *" className="input" />
+              <input name="telefono" value={formData.telefono} onChange={handleInputChange} placeholder="Teléfono *" className="input" />
+              <input name="direccion" value={formData.direccion} onChange={handleInputChange} placeholder="Dirección *" className="input" />
+              <input name="ciudad" value={formData.ciudad} onChange={handleInputChange} placeholder="Ciudad *" className="input" />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-xl">Cancelar</button>
+              <button onClick={handleSubmit} className="px-4 py-2 bg-green-600 text-white rounded-xl">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

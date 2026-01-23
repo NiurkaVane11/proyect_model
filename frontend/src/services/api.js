@@ -22,11 +22,11 @@ export const anunciantesService = {
 export const panaderiasService = {
   getAll: () => api.get('/panaderias'),
   getById: (id) => api.get(`/panaderias/${id}`),
-  getByFranquiciado: (id) => api.get(`/panaderias/franquiciado/${id}`),
   create: (data) => api.post('/panaderias', data),
   update: (id, data) => api.put(`/panaderias/${id}`, data),
-  changeStatus: (id, estado) => api.patch(`/panaderias/${id}/estado`, { estado }),
   delete: (id) => api.delete(`/panaderias/${id}`),
+  getByEstado: (estado) => api.get(`/panaderias/estado/${estado}`),
+  getByCiudad: (ciudad) => api.get(`/panaderias/ciudad/${ciudad}`),
   getStats: () => api.get('/panaderias/stats/general')
 };
 

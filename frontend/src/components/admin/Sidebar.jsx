@@ -21,6 +21,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection,
     { id: 'distribucion', name: 'Distribución', icon: Package },
     { id: 'pagos', name: 'Pagos', icon: DollarSign },
     { id: 'impacto', name: 'Impacto Ambiental', icon: Leaf },
+    { id: 'inventario', name: 'Inventario', icon: FileText }
   ];
 
   return (

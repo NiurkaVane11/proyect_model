@@ -6,6 +6,7 @@ import Anunciantes from './Anunciantes';
 import Donaciones from './Donaciones';
 import Panaderias from './Panaderias';
 import Distribucion from './Distribucion';
+import Inventario from './Inventario';
 import Pagos from './Pagos';
 import ImpactoAmbiental from './ImpactoAmbiental';
 
@@ -37,6 +38,8 @@ const AdminPanel = () => {
         return <Pagos />;
       case 'impacto':
         return <ImpactoAmbiental />;
+      case 'inventario':
+        return <Inventario />;
       default:
         return <Dashboard />;
     }
