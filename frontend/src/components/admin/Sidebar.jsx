@@ -14,14 +14,18 @@ import {
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection, handleLogout }) => {
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'anunciantes', name: 'Anunciantes', icon: Megaphone },
     { id: 'donaciones', name: 'Donaciones', icon: Radio },
     { id: 'panaderias', name: 'Panaderías', icon: Store },
     { id: 'distribucion', name: 'Distribución', icon: Package },
     { id: 'pagos', name: 'Pagos', icon: DollarSign },
     { id: 'impacto', name: 'Impacto Ambiental', icon: Leaf },
-    { id: 'inventario', name: 'Inventario', icon: FileText }
+    { id: 'inventario', name: 'Inventario', icon: FileText },
+    { id: 'franquicias', name: 'Franquiciados', icon: Store },
+    { id: 'cobros', name: 'Cobros', icon: DollarSign },
+    { id: 'facturaciones', name: 'Facturación', icon: FileText },
+    { id: 'produccion', name: 'Producción', icon: LayoutDashboard }
+
   ];
 
   return (

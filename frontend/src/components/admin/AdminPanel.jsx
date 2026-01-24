@@ -1,7 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-import Dashboard from './Dashboard';
 import Anunciantes from './Anunciantes';
 import Donaciones from './Donaciones';
 import Panaderias from './Panaderias';
@@ -9,23 +9,36 @@ import Distribucion from './Distribucion';
 import Inventario from './Inventario';
 import Pagos from './Pagos';
 import ImpactoAmbiental from './ImpactoAmbiental';
+import Franquiciados from './Franquiciados';
+import Cobros from './Cobros';
+//import Facturaciones from './Facturaciones';
+import Produccion from './Produccion';
 
 const AdminPanel = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState('produccion');
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
+   const handleLogout = () => {
     if (window.confirm('¿Estás seguro que deseas cerrar sesión?')) {
-      // En tu proyecto real, usa: navigate('/');
-      console.log('Logout confirmado');
+      // Limpiar datos de sesión
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+      
+      // Redirigir al login
+      navigate('/'); // O navigate('/login') según tu ruta
+      
+      console.log('Sesión cerrada exitosamente');
     }
   };
+   
 
   // Renderizar el componente activo según la sección seleccionada
   const renderActiveSection = () => {
     switch(activeSection) {
-      case 'dashboard':
-        return <Dashboard />;
+      case 'produccion':
+        return <Produccion />;
       case 'anunciantes':
         return <Anunciantes />;
       case 'donaciones':
@@ -40,9 +53,14 @@ const AdminPanel = () => {
         return <ImpactoAmbiental />;
       case 'inventario':
         return <Inventario />;
-        
+      case 'franquicias':
+        return <Franquiciados />;
+         case 'cobros':
+        return <Cobros />;
+         //case 'facturaciones':
+        //return <Facturaciones />;
       default:
-        return <Dashboard />;
+        return <Produccion />;
     }
   };
 

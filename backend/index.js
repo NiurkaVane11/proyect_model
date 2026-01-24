@@ -20,8 +20,10 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       anunciantes: '/api/anunciantes',
-      panaderias: '/api/panaderias'
-      // Agrega más conforme crees las rutas
+      panaderias: '/api/panaderias',
+      franquiciados: '/api/franquiciados',
+      cobros: '/api/cobros' ,
+      produccion: '/api/produccion'
     }
   });
 });
@@ -33,19 +35,27 @@ app.get('/api', (req, res) => {
     version: '1.0.0',
     endpoints: {
       anunciantes: '/api/anunciantes',
-      panaderias: '/api/panaderias'
-      // Agrega más conforme crees las rutas
+      panaderias: '/api/panaderias',
+      franquiciados: '/api/franquiciados',
+      cobros: '/api/cobros',
+      produccion: '/api/produccion'
     }
   });
 });
 
-// Importar solo las rutas que existen
+// Importar rutas
 const anunciantesRoutes = require('./routes/anunciantes');
 const panaderiasRoutes = require('./routes/panaderias');
+const franquiciadosRoutes = require('./routes/franquiciados');  // AGREGADO
+const cobrosRoutes = require('./routes/cobros'); 
+const produccionRoutes = require('./routes/produccion');
 
 // Usar rutas
 app.use('/api/anunciantes', anunciantesRoutes);
 app.use('/api/panaderias', panaderiasRoutes);
+app.use('/api/franquiciados', franquiciadosRoutes);  // AGREGADO
+app.use('/api/cobros', cobrosRoutes); // Ruta de cobros
+app.use('/api/produccion', produccionRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
