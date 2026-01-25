@@ -290,4 +290,43 @@ router.get('/stats/general', async (req, res) => {
   }
 });
 
+
+// GET - Panaderías activas (VISTA)
+router.get('/vistas/activas', async (req, res) => {
+  try {
+    const rows = await pool.query(
+      'SELECT * FROM vista_panaderias_activas'
+    );
+    res.json({
+      success: true,
+      data: rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener vista panaderías activas',
+      error: error.message
+    });
+  }
+});
+
+// GET - Estadísticas desde vista
+router.get('/vistas/stats', async (req, res) => {
+  try {
+    const rows = await pool.query(
+      'SELECT * FROM vista_estadisticas_panaderias'
+    );
+    res.json({
+      success: true,
+      data: rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estadísticas',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

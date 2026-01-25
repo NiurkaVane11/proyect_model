@@ -23,7 +23,10 @@ app.get('/', (req, res) => {
       panaderias: '/api/panaderias',
       franquiciados: '/api/franquiciados',
       cobros: '/api/cobros' ,
-      produccion: '/api/produccion'
+      produccion: '/api/produccion',
+      facturacion: '/api/facturacion',
+      distribucion: '/api/distribucion',
+      inventario: '/api/inventario' 
     }
   });
 });
@@ -38,7 +41,11 @@ app.get('/api', (req, res) => {
       panaderias: '/api/panaderias',
       franquiciados: '/api/franquiciados',
       cobros: '/api/cobros',
-      produccion: '/api/produccion'
+      produccion: '/api/produccion',
+      facturacion: '/api/facturacion',
+      distribucion: '/api/distribucion',
+      inventario: '/api/inventario'
+
     }
   });
 });
@@ -49,6 +56,9 @@ const panaderiasRoutes = require('./routes/panaderias');
 const franquiciadosRoutes = require('./routes/franquiciados');  // AGREGADO
 const cobrosRoutes = require('./routes/cobros'); 
 const produccionRoutes = require('./routes/produccion');
+const facturacionRoutes = require('./routes/facturacion');
+const distribucionRoutes = require('./routes/distribucion');
+const inventarioRoutes = require('./routes/inventario');
 
 // Usar rutas
 app.use('/api/anunciantes', anunciantesRoutes);
@@ -56,6 +66,10 @@ app.use('/api/panaderias', panaderiasRoutes);
 app.use('/api/franquiciados', franquiciadosRoutes);  // AGREGADO
 app.use('/api/cobros', cobrosRoutes); // Ruta de cobros
 app.use('/api/produccion', produccionRoutes);
+app.use('/api/facturacion', facturacionRoutes);
+app.use('/api/distribucion', distribucionRoutes);
+app.use('/api/inventario', inventarioRoutes);
+
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

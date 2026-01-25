@@ -8,10 +8,9 @@ import Panaderias from './Panaderias';
 import Distribucion from './Distribucion';
 import Inventario from './Inventario';
 import Pagos from './Pagos';
-import ImpactoAmbiental from './ImpactoAmbiental';
 import Franquiciados from './Franquiciados';
 import Cobros from './Cobros';
-//import Facturaciones from './Facturaciones';
+import Facturaciones from './Facturaciones';
 import Produccion from './Produccion';
 
 const AdminPanel = () => {
@@ -49,16 +48,15 @@ const AdminPanel = () => {
         return <Distribucion />;
       case 'pagos':
         return <Pagos />;
-      case 'impacto':
-        return <ImpactoAmbiental />;
+   
       case 'inventario':
         return <Inventario />;
       case 'franquicias':
         return <Franquiciados />;
          case 'cobros':
         return <Cobros />;
-         //case 'facturaciones':
-        //return <Facturaciones />;
+         case 'facturaciones':
+        return <Facturaciones />;
       default:
         return <Produccion />;
     }

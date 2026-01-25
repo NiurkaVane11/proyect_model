@@ -65,4 +65,45 @@ export const produccionService = {
     params: { fecha_inicio: fechaInicio, fecha_fin: fechaFin }
   })
 };
+
+export const facturacionService = {
+  getAll: () => api.get('/facturacion'),
+  getById: (id) => api.get(`/facturacion/${id}`),
+  getByAnunciante: (idAnunciante) => api.get(`/facturacion/anunciante/${idAnunciante}`),
+  create: (data) => api.post('/facturacion', data),
+  update: (id, data) => api.put(`/facturacion/${id}`, data),
+  delete: (id) => api.delete(`/facturacion/${id}`),
+  getStats: () => api.get('/facturacion/stats/resumen'),
+  getStatsByEstado: () => api.get('/facturacion/stats/por-estado'),
+  getStatsByFecha: (fechaInicio, fechaFin) => api.get('/facturacion/stats/por-fecha', { 
+    params: { fecha_inicio: fechaInicio, fecha_fin: fechaFin } 
+  }),
+  getVencidas: () => api.get('/facturacion/stats/vencidas'),
+  registrarPago: (id, montoPago) => api.put(`/facturacion/${id}/registrar-pago`, { monto_pago: montoPago })
+};
+
+// Servicios para Distribución de Bolsas
+export const distribucionService = {
+  getAll: () => api.get('/distribucion'),
+  getById: (id) => api.get(`/distribucion/${id}`),
+  create: (data) => api.post('/distribucion', data),
+  update: (id, data) => api.put(`/distribucion/${id}`, data),
+  delete: (id) => api.delete(`/distribucion/${id}`),
+  getByEstado: (estado) => api.get(`/distribucion/estado/${estado}`),
+  getByPanaderia: (idPanaderia) => api.get(`/distribucion/panaderia/${idPanaderia}`),
+  getByFechas: (desde, hasta) => api.get(`/distribucion/fecha/${desde}/${hasta}`),
+  updateEstado: (id, estado) => api.patch(`/distribucion/${id}/estado`, { estado_entrega: estado }),
+  getStats: () => api.get('/distribucion/stats/general'),
+  getStatsByPanaderia: (idPanaderia) => api.get(`/distribucion/stats/panaderia/${idPanaderia}`),
+  getHoy: () => api.get('/distribucion/hoy/todas')
+};
+
+export const inventarioService = {
+  getAll: () => api.get('/inventario'),
+  getById: (id) => api.get(`/inventario/${id}`),
+  create: (data) => api.post('/inventario', data),
+  update: (id, data) => api.put(`/inventario/${id}`, data),
+  delete: (id) => api.delete(`/inventario/${id}`)
+};
+
 export default api;
