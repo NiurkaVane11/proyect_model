@@ -7,14 +7,9 @@ router.get('/', async (req, res) => {
   try {
     const query = `
       SELECT 
-        p.*,
-        f.nombres as franquiciado_nombres,
-        f.apellidos as franquiciado_apellidos,
-        fr.nombre_comercial as franquicia_nombre
-      FROM pagos p
-      LEFT JOIN franquiciados f ON p.id_franquiciado = f.id_franquiciado
-      LEFT JOIN franquicias fr ON p.id_franquicia = fr.id_franquicia
-      ORDER BY p.fecha_pago DESC
+        p.*
+      FROM pagos_franquicia p
+      ORDER BY p.fecha_registro DESC
     `;
     
     const result = await db.query(query);
@@ -31,14 +26,8 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const query = `
-      SELECT 
-        p.*,
-        f.nombres as franquiciado_nombres,
-        f.apellidos as franquiciado_apellidos,
-        fr.nombre_comercial as franquicia_nombre
-      FROM pagos p
-      LEFT JOIN franquiciados f ON p.id_franquiciado = f.id_franquiciado
-      LEFT JOIN franquicias fr ON p.id_franquicia = fr.id_franquicia
+      SELECT p.*
+      FROM pagos_franquicia p
       WHERE p.id_pago = ?
     `;
     
@@ -60,41 +49,53 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      id_franquiciado,
-      id_franquicia,
       tipo_pago,
-      monto,
+      numero_factura,
+      fecha_emision,
+      fecha_vencimiento,
       fecha_pago,
+      monto_total,
+      monto_pagado,
+      saldo,
       metodo_pago,
       numero_comprobante,
-      estado,
-      observaciones
+      estado_pago,
+      observaciones,
+      usuario_registro
     } = req.body;
 
     const query = `
-      INSERT INTO pagos (
-        id_franquiciado,
-        id_franquicia,
+      INSERT INTO pagos_franquicia (
         tipo_pago,
-        monto,
+        numero_factura,
+        fecha_emision,
+        fecha_vencimiento,
         fecha_pago,
+        monto_total,
+        monto_pagado,
+        saldo,
         metodo_pago,
         numero_comprobante,
-        estado,
-        observaciones
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        estado_pago,
+        observaciones,
+        usuario_registro
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const result = await db.query(query, [
-      id_franquiciado,
-      id_franquicia,
       tipo_pago,
-      monto,
-      fecha_pago,
-      metodo_pago,
+      numero_factura || null,
+      fecha_emision,
+      fecha_vencimiento,
+      fecha_pago || null,
+      monto_total,
+      monto_pagado || 0.00,
+      saldo || monto_total,
+      metodo_pago || null,
       numero_comprobante || null,
-      estado || 'pendiente',
-      observaciones || null
+      estado_pago || 'pendiente',
+      observaciones || null,
+      usuario_registro || 'admin'
     ]);
 
     const insertId = result.insertId || result[0]?.insertId;
@@ -113,41 +114,53 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const {
-      id_franquiciado,
-      id_franquicia,
       tipo_pago,
-      monto,
+      numero_factura,
+      fecha_emision,
+      fecha_vencimiento,
       fecha_pago,
+      monto_total,
+      monto_pagado,
+      saldo,
       metodo_pago,
       numero_comprobante,
-      estado,
-      observaciones
+      estado_pago,
+      observaciones,
+      usuario_registro
     } = req.body;
 
     const query = `
-      UPDATE pagos SET
-        id_franquiciado = ?,
-        id_franquicia = ?,
+      UPDATE pagos_franquicia SET
         tipo_pago = ?,
-        monto = ?,
+        numero_factura = ?,
+        fecha_emision = ?,
+        fecha_vencimiento = ?,
         fecha_pago = ?,
+        monto_total = ?,
+        monto_pagado = ?,
+        saldo = ?,
         metodo_pago = ?,
         numero_comprobante = ?,
-        estado = ?,
-        observaciones = ?
+        estado_pago = ?,
+        observaciones = ?,
+        usuario_registro = ?
       WHERE id_pago = ?
     `;
 
     const result = await db.query(query, [
-      id_franquiciado,
-      id_franquicia,
       tipo_pago,
-      monto,
+      numero_factura,
+      fecha_emision,
+      fecha_vencimiento,
       fecha_pago,
+      monto_total,
+      monto_pagado,
+      saldo,
       metodo_pago,
       numero_comprobante,
-      estado,
+      estado_pago,
       observaciones,
+      usuario_registro,
       req.params.id
     ]);
 
@@ -167,7 +180,7 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar pago
 router.delete('/:id', async (req, res) => {
   try {
-    const query = 'DELETE FROM pagos WHERE id_pago = ?';
+    const query = 'DELETE FROM pagos_franquicia WHERE id_pago = ?';
     const result = await db.query(query, [req.params.id]);
 
     const affectedRows = result.affectedRows || result[0]?.affectedRows;
@@ -179,53 +192,6 @@ router.delete('/:id', async (req, res) => {
     res.json({ success: true, message: 'Pago eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar pago:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// GET - Obtener pagos por franquiciado
-router.get('/franquiciado/:id', async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        p.*,
-        fr.nombre_comercial as franquicia_nombre
-      FROM pagos p
-      LEFT JOIN franquicias fr ON p.id_franquicia = fr.id_franquicia
-      WHERE p.id_franquiciado = ?
-      ORDER BY p.fecha_pago DESC
-    `;
-    
-    const result = await db.query(query, [req.params.id]);
-    const rows = Array.isArray(result[0]) ? result[0] : result;
-    
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    console.error('Error al obtener pagos del franquiciado:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// GET - Obtener pagos por franquicia
-router.get('/franquicia/:id', async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        p.*,
-        f.nombres as franquiciado_nombres,
-        f.apellidos as franquiciado_apellidos
-      FROM pagos p
-      LEFT JOIN franquiciados f ON p.id_franquiciado = f.id_franquiciado
-      WHERE p.id_franquicia = ?
-      ORDER BY p.fecha_pago DESC
-    `;
-    
-    const result = await db.query(query, [req.params.id]);
-    const rows = Array.isArray(result[0]) ? result[0] : result;
-    
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    console.error('Error al obtener pagos de la franquicia:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
