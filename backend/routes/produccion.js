@@ -5,10 +5,12 @@ const db = require('../config/database');
 // GET - Obtener todas las producciones
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       `SELECT * FROM produccion_bolsas 
        ORDER BY fecha_orden DESC`
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
+    
     res.json({
       success: true,
       data: rows
@@ -26,10 +28,11 @@ router.get('/', async (req, res) => {
 // GET - Obtener una producción por ID
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM produccion_bolsas WHERE id_produccion = ?',
       [req.params.id]
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     if (rows.length === 0) {
       return res.status(404).json({
@@ -56,23 +59,12 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const {
-      numero_orden,
-      fecha_orden,
-      proveedor_impresion,
-      cantidad_solicitada,
-      cantidad_producida,
-      cantidad_defectuosa,
-      costo_unitario,
-      costo_total,
-      fecha_estimada_entrega,
-      fecha_real_entrega,
-      responsable_calidad,
-      estado,
-      observaciones,
-      usuario_registro
+      numero_orden, fecha_orden, proveedor_impresion, cantidad_solicitada,
+      cantidad_producida, cantidad_defectuosa, costo_unitario, costo_total,
+      fecha_estimada_entrega, fecha_real_entrega, responsable_calidad,
+      estado, observaciones, usuario_registro
     } = req.body;
 
-    // Validaciones básicas
     if (!numero_orden || !fecha_orden || !cantidad_solicitada) {
       return res.status(400).json({
         success: false,
@@ -80,52 +72,32 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const [result] = await db.query(
+    const result = await db.query(
       `INSERT INTO produccion_bolsas (
-        numero_orden,
-        fecha_orden,
-        proveedor_impresion,
-        cantidad_solicitada,
-        cantidad_producida,
-        cantidad_defectuosa,
-        costo_unitario,
-        costo_total,
-        fecha_estimada_entrega,
-        fecha_real_entrega,
-        responsable_calidad,
-        estado,
-        observaciones,
-        usuario_registro
+        numero_orden, fecha_orden, proveedor_impresion, cantidad_solicitada,
+        cantidad_producida, cantidad_defectuosa, costo_unitario, costo_total,
+        fecha_estimada_entrega, fecha_real_entrega, responsable_calidad,
+        estado, observaciones, usuario_registro
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        numero_orden,
-        fecha_orden,
-        proveedor_impresion || null,
-        cantidad_solicitada,
-        cantidad_producida || null,
-        cantidad_defectuosa || 0,
-        costo_unitario || null,
-        costo_total || null,
-        fecha_estimada_entrega || null,
-        fecha_real_entrega || null,
-        responsable_calidad || null,
-        estado || 'pendiente',
-        observaciones || null,
+        numero_orden, fecha_orden, proveedor_impresion || null, cantidad_solicitada,
+        cantidad_producida || null, cantidad_defectuosa || 0, costo_unitario || null,
+        costo_total || null, fecha_estimada_entrega || null, fecha_real_entrega || null,
+        responsable_calidad || null, estado || 'pendiente', observaciones || null,
         usuario_registro || null
       ]
     );
 
+    const insertId = result.insertId || result[0]?.insertId;
+
     res.status(201).json({
       success: true,
       message: 'Producción creada exitosamente',
-      data: {
-        id_produccion: result.insertId
-      }
+      data: { id_produccion: insertId }
     });
   } catch (error) {
     console.error('Error al crear producción:', error);
     
-    // Error de clave duplicada (número de orden ya existe)
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({
         success: false,
@@ -145,26 +117,17 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const {
-      numero_orden,
-      fecha_orden,
-      proveedor_impresion,
-      cantidad_solicitada,
-      cantidad_producida,
-      cantidad_defectuosa,
-      costo_unitario,
-      costo_total,
-      fecha_estimada_entrega,
-      fecha_real_entrega,
-      responsable_calidad,
-      estado,
-      observaciones
+      numero_orden, fecha_orden, proveedor_impresion, cantidad_solicitada,
+      cantidad_producida, cantidad_defectuosa, costo_unitario, costo_total,
+      fecha_estimada_entrega, fecha_real_entrega, responsable_calidad,
+      estado, observaciones
     } = req.body;
 
-    // Verificar que la producción existe
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_produccion FROM produccion_bolsas WHERE id_produccion = ?',
       [req.params.id]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -175,34 +138,17 @@ router.put('/:id', async (req, res) => {
 
     await db.query(
       `UPDATE produccion_bolsas SET
-        numero_orden = ?,
-        fecha_orden = ?,
-        proveedor_impresion = ?,
-        cantidad_solicitada = ?,
-        cantidad_producida = ?,
-        cantidad_defectuosa = ?,
-        costo_unitario = ?,
-        costo_total = ?,
-        fecha_estimada_entrega = ?,
-        fecha_real_entrega = ?,
-        responsable_calidad = ?,
-        estado = ?,
+        numero_orden = ?, fecha_orden = ?, proveedor_impresion = ?,
+        cantidad_solicitada = ?, cantidad_producida = ?, cantidad_defectuosa = ?,
+        costo_unitario = ?, costo_total = ?, fecha_estimada_entrega = ?,
+        fecha_real_entrega = ?, responsable_calidad = ?, estado = ?,
         observaciones = ?
       WHERE id_produccion = ?`,
       [
-        numero_orden,
-        fecha_orden,
-        proveedor_impresion || null,
-        cantidad_solicitada,
-        cantidad_producida || null,
-        cantidad_defectuosa || 0,
-        costo_unitario || null,
-        costo_total || null,
-        fecha_estimada_entrega || null,
-        fecha_real_entrega || null,
-        responsable_calidad || null,
-        estado || 'pendiente',
-        observaciones || null,
+        numero_orden, fecha_orden, proveedor_impresion || null, cantidad_solicitada,
+        cantidad_producida || null, cantidad_defectuosa || 0, costo_unitario || null,
+        costo_total || null, fecha_estimada_entrega || null, fecha_real_entrega || null,
+        responsable_calidad || null, estado || 'pendiente', observaciones || null,
         req.params.id
       ]
     );
@@ -232,10 +178,11 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar producción
 router.delete('/:id', async (req, res) => {
   try {
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_produccion FROM produccion_bolsas WHERE id_produccion = ?',
       [req.params.id]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -266,7 +213,7 @@ router.delete('/:id', async (req, res) => {
 // GET - Estadísticas de producción
 router.get('/stats/summary', async (req, res) => {
   try {
-    const [stats] = await db.query(
+    const result = await db.query(
       `SELECT 
         COUNT(*) as total_ordenes,
         SUM(cantidad_solicitada) as total_solicitado,
@@ -281,9 +228,12 @@ router.get('/stats/summary', async (req, res) => {
       FROM produccion_bolsas`
     );
 
+    const rows = Array.isArray(result) ? (Array.isArray(result[0]) ? result[0] : result) : [result];
+    const stats = rows[0] || {};
+
     res.json({
       success: true,
-      data: stats[0]
+      data: stats
     });
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
@@ -298,12 +248,13 @@ router.get('/stats/summary', async (req, res) => {
 // GET - Producciones por estado
 router.get('/filter/estado/:estado', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       `SELECT * FROM produccion_bolsas 
        WHERE estado = ?
        ORDER BY fecha_orden DESC`,
       [req.params.estado]
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     res.json({
       success: true,
@@ -331,12 +282,13 @@ router.get('/filter/fechas', async (req, res) => {
       });
     }
 
-    const [rows] = await db.query(
+    const result = await db.query(
       `SELECT * FROM produccion_bolsas 
        WHERE fecha_orden BETWEEN ? AND ?
        ORDER BY fecha_orden DESC`,
       [fecha_inicio, fecha_fin]
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     res.json({
       success: true,

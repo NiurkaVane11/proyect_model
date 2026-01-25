@@ -1,22 +1,137 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Edit, Trash2, Eye, MapPin, Phone, Mail, CheckCircle,
-  XCircle, AlertCircle, X, Calendar, Clock, Building
+  XCircle, AlertCircle, X, Calendar, Clock, Building, Store, RefreshCw
 } from 'lucide-react';
 import { panaderiasService } from '../../services/api';
-import { Store } from 'lucide-react';
-
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 /*
-  Mejoras incluidas:
-  - Cabecera con estadísticas
-  - Búsqueda con debounce + botón limpiar
-  - Table mejorada + versión en tarjetas para móvil (responsive)
-  - Modal con layout de formulario más claro y validaciones básicas
-  - View modal con íconos
-  - Skeleton de carga y mensaje de vacío / error con retry
+  Panaderias.jsx — Versión completa con CityFilterPanel incorporado en el mismo archivo.
+  - CityFilterPanel está declarado antes del componente principal y reemplaza la tabla por-ciudad.
+  - Usa panaderiasService.getPorCiudad() y getAltoConsumo() (asegúrate que existen en services).
+  - Incluye toasts (react-toastify) para feedback no bloqueante.
 */
 
+/* ----------------- CityFilterPanel (inline) ----------------- */
+function CityFilterPanel({ cities = [], onViewCity = () => {}, onRefresh = () => {} }) {
+  const [query, setQuery] = useState('');
+  const [minCount, setMinCount] = useState(0);
+  const [sortDesc, setSortDesc] = useState(true);
+
+  const normalized = (cities || []).map(c => ({
+    ciudad: c.ciudad || c.city || '',
+    total: Number(c.total_panaderias ?? c.total ?? 0)
+  }));
+
+  const filtered = useMemo(() => {
+    let list = normalized;
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      list = list.filter(i => i.ciudad.toLowerCase().includes(q));
+    }
+    if (minCount > 0) {
+      list = list.filter(i => i.total >= minCount);
+    }
+    list = list.slice();
+    list.sort((a, b) => sortDesc ? b.total - a.total : a.total - b.total);
+    return list;
+  }, [normalized, query, minCount, sortDesc]);
+
+  const topChips = filtered.slice(0, 8);
+
+  return (
+    <div className="bg-white rounded-xl shadow p-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <div className="flex-1 min-w-0">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar ciudad..."
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 hidden md:inline">Mínimo</label>
+          <select
+            value={minCount}
+            onChange={(e) => setMinCount(Number(e.target.value))}
+            className="px-3 py-2 border rounded-md text-sm"
+          >
+            <option value={0}>Mostrar todos</option>
+            <option value={1}>≥ 1</option>
+            <option value={3}>≥ 3</option>
+            <option value={5}>≥ 5</option>
+          </select>
+
+          <button
+            onClick={() => setSortDesc(s => !s)}
+            className="px-3 py-2 bg-green-50 text-green-700 rounded-md text-sm"
+            title="Ordenar"
+          >
+            {sortDesc ? 'Orden: Desc' : 'Orden: Asc'}
+          </button>
+
+          <button
+            onClick={onRefresh}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white border rounded-md text-sm hover:bg-gray-50"
+            title="Refrescar"
+          >
+            Refrescar
+          </button>
+        </div>
+      </div>
+
+      {/* Chips rápidos */}
+      <div className="mb-3">
+        <div className="flex flex-wrap gap-2">
+          {topChips.length === 0 ? (
+            <div className="text-sm text-gray-500">No hay ciudades destacadas</div>
+          ) : topChips.map((c) => (
+            <button
+              key={c.ciudad}
+              onClick={() => onViewCity(c.ciudad)}
+              className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 hover:bg-green-50 rounded-full text-sm"
+            >
+              <span className="font-medium">{c.ciudad}</span>
+              <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded-full">{c.total}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Lista compacta */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {filtered.length === 0 ? (
+          <div className="col-span-1 md:col-span-3 text-center py-4 text-sm text-gray-500 rounded border">
+            No hay datos
+          </div>
+        ) : (
+          filtered.map((c) => (
+            <div key={c.ciudad} className="flex items-center justify-between p-3 border rounded-lg bg-white">
+              <div>
+                <div className="font-medium">{c.ciudad}</div>
+                <div className="text-xs text-gray-500">Panaderías: {c.total}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onViewCity(c.ciudad)}
+                  className="px-3 py-1 bg-green-600 text-white rounded-md text-sm"
+                >
+                  Ver
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ----------------- Helpers UI ----------------- */
 const Input = ({ label, name, value, onChange, placeholder, required = false, type = 'text' }) => (
   <label className="block">
     <div className="text-sm font-medium mb-1 flex items-center gap-1">
@@ -65,14 +180,34 @@ const formatDate = (d) => {
   }
 };
 
+const StoreIconFallback = () => <Store size={18} className="text-green-600" />;
+
+/* ----------------- Main Component ----------------- */
 const Panaderias = () => {
+  // Main state
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [panaderias, setPanaderias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [soloActivas, setSoloActivas] = useState(false);
 
+  // Views state
+  const [panaderiasPorCiudad, setPanaderiasPorCiudad] = useState([]);
+  const [loadingCiudad, setLoadingCiudad] = useState(false);
+  const [showCiudadView, setShowCiudadView] = useState(true);
+
+  const [altoConsumo, setAltoConsumo] = useState([]);
+  const [loadingAlto, setLoadingAlto] = useState(false);
+  const [showAltoView, setShowAltoView] = useState(true);
+
+  // Por-ciudad filters
+  const [ciudadSearch, setCiudadSearch] = useState('');
+  const [minCount, setMinCount] = useState(0);
+  const [sortDesc, setSortDesc] = useState(true);
+
+  // Modal & form
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -99,32 +234,83 @@ const Panaderias = () => {
     observaciones: ''
   });
 
-  useEffect(() => {
-    cargarPanaderias();
-  }, []);
-
-  // debounce search
+  // Debounce search for main table
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
     return () => clearTimeout(t);
   }, [searchTerm]);
 
+  // Helpers: load views and lists
   const cargarPanaderias = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await panaderiasService.getAll();
+      const res = soloActivas
+        ? await panaderiasService.getActivas()
+        : await panaderiasService.getAll();
       const data = res.data?.data || res.data || [];
       setPanaderias(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
+      console.error('Error cargarPanaderias:', err);
       setError('Error al cargar las panaderías. Intenta nuevamente.');
+      toast.error('Error al cargar panaderías');
       setPanaderias([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // En Panaderias.jsx (alrededor de la línea 189)
+const cargarPanaderiasPorCiudad = async () => {
+  try {
+    setLoadingCiudad(true);
+    // CAMBIO AQUÍ: Usa 'getVistasPorCiudad' para traer la lista de todas las ciudades con sus totales
+    const res = await panaderiasService.getVistasPorCiudad(); 
+    const data = res.data?.data || res.data || [];
+    setPanaderiasPorCiudad(Array.isArray(data) ? data : []);
+  } catch (err) {
+    console.error('Error cargarPanaderiasPorCiudad:', err);
+    setPanaderiasPorCiudad([]);
+    toast.error('Error al cargar vista por ciudad');
+  } finally {
+    setLoadingCiudad(false);
+  }
+};
+ 
+  const cargarAltoConsumo = async () => {
+    try {
+      setLoadingAlto(true);
+      const res = await panaderiasService.getAltoConsumo();
+      const data = res.data?.data || res.data || [];
+      setAltoConsumo(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error cargarAltoConsumo:', err);
+      setAltoConsumo([]);
+      toast.error('Error al cargar vista alto consumo');
+    } finally {
+      setLoadingAlto(false);
+    }
+  };
+
+  // Consolidated initial load
+  useEffect(() => {
+    const loadAll = async () => {
+      await Promise.all([
+        cargarPanaderias(),
+        cargarPanaderiasPorCiudad(),
+        cargarAltoConsumo()
+      ]);
+    };
+    loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // reload main list when soloActivas changes
+  useEffect(() => {
+    cargarPanaderias();
+  }, [soloActivas]);
+
+  // Form handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -154,6 +340,7 @@ const Panaderias = () => {
     setSelectedPanaderia(null);
   };
 
+  // CRUD actions (toasts)
   const handleCreate = () => {
     resetForm();
     setModalMode('create');
@@ -173,7 +360,6 @@ const Panaderias = () => {
   };
 
   const handleSubmit = async () => {
-    // simple validations
     if (
       !formData.nombre_comercial.trim() ||
       !formData.nombre_contacto.trim() ||
@@ -182,7 +368,7 @@ const Panaderias = () => {
       !formData.ciudad.trim() ||
       !formData.provincia.trim()
     ) {
-      alert('Completa los campos obligatorios (*)');
+      toast.warn('Completa los campos obligatorios (*)');
       return;
     }
 
@@ -190,15 +376,19 @@ const Panaderias = () => {
       setSaving(true);
       if (modalMode === 'create') {
         await panaderiasService.create(formData);
+        toast.success('Panadería creada');
       } else {
         await panaderiasService.update(selectedPanaderia.id_panaderia, formData);
+        toast.success('Panadería actualizada');
       }
       setShowModal(false);
       resetForm();
       await cargarPanaderias();
+      await cargarPanaderiasPorCiudad();
+      await cargarAltoConsumo();
     } catch (err) {
-      console.error(err);
-      alert('Error al guardar la panadería');
+      console.error('Error al guardar:', err);
+      toast.error('Error al guardar la panadería');
     } finally {
       setSaving(false);
     }
@@ -208,27 +398,28 @@ const Panaderias = () => {
     if (!window.confirm('¿Eliminar esta panadería?')) return;
     try {
       await panaderiasService.delete(id);
-      cargarPanaderias();
+      toast.success('Panadería eliminada');
+      await cargarPanaderias();
+      await cargarPanaderiasPorCiudad();
+      await cargarAltoConsumo();
     } catch (err) {
-      console.error(err);
-      alert('Error al eliminar');
+      console.error('Error al eliminar:', err);
+      toast.error('Error al eliminar panadería');
     }
   };
 
-  // Derived values (useMemo para evitar cálculos innecesarios)
+  // Derived values
   const bolsasTotales = useMemo(
     () => panaderias.reduce((acc, p) => acc + Number(p.cantidad_bolsas_mensual || 0), 0),
     [panaderias]
   );
-  const promedioXPanaderia = useMemo(
-    () => (panaderias.length ? Math.round(bolsasTotales / panaderias.length) : 0),
-    [bolsasTotales, panaderias.length]
-  );
+
   const panaderiasActivas = useMemo(
     () => panaderias.filter(p => p.estado === 'activo').length,
     [panaderias]
   );
 
+  // Main filtering
   const filteredPanaderias = useMemo(() => {
     if (!debouncedSearch) return panaderias;
     const term = debouncedSearch.toLowerCase();
@@ -240,8 +431,21 @@ const Panaderias = () => {
     );
   }, [panaderias, debouncedSearch]);
 
+  // por-ciudad visible list (for internal use; CityFilterPanel handles its own filtering)
+  const visiblePorCiudad = useMemo(() => panaderiasPorCiudad || [], [panaderiasPorCiudad]);
+
+  const visibleAltoConsumo = useMemo(() => altoConsumo || [], [altoConsumo]);
+
+  // action: view city in main table
+  const viewCityInTable = (ciudad) => {
+    setSearchTerm(ciudad);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
+      <ToastContainer position="top-right" autoClose={2500} hideProgressBar />
+
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
@@ -256,6 +460,16 @@ const Panaderias = () => {
             <StatCard title="Bolsas totales" value={bolsasTotales} icon={<StoreIconFallback />} />
           </div>
 
+          <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border shadow-sm">
+            <input
+              type="checkbox"
+              checked={soloActivas}
+              onChange={(e) => setSoloActivas(e.target.checked)}
+              className="w-4 h-4 text-green-600 rounded focus:ring-2 focus:ring-green-300"
+            />
+            <span className="text-sm font-medium">Solo activas</span>
+          </label>
+
           <button
             onClick={handleCreate}
             className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition"
@@ -265,32 +479,83 @@ const Panaderias = () => {
         </div>
       </div>
 
-      {/* SEARCH + STATS (mobile) */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="col-span-2">
-          <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400"><Search size={16} /></span>
-            <input
-              className="w-full pl-10 pr-10 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200"
-              placeholder="Buscar por nombre, ciudad, contacto o RUC..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md hover:bg-gray-100"
-                title="Limpiar"
-              >
-                <X size={16} />
-              </button>
-            )}
+      {/* CityFilterPanel (replaces old por-ciudad table) */}
+      <div className="mt-10">
+        <CityFilterPanel
+          cities={panaderiasPorCiudad}
+          onViewCity={(ciudad) => {
+            viewCityInTable(ciudad);
+          }}
+          onRefresh={() => cargarPanaderiasPorCiudad()}
+        />
+      </div>
+
+      {/* Alto consumo view */}
+      <div className="mt-6 bg-white rounded-xl shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Panaderías con alto consumo de bolsas</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowAltoView(v => !v)} className="px-3 py-1 bg-gray-100 rounded-md text-sm">{showAltoView ? 'Ocultar' : 'Mostrar'}</button>
+            <button onClick={cargarAltoConsumo} className="inline-flex items-center gap-2 px-3 py-1 bg-white border rounded-md text-sm hover:bg-gray-50">
+              <RefreshCw size={14} /> Refrescar
+            </button>
           </div>
         </div>
 
-        <div className="hidden md:flex items-center gap-3">
-          <StatCard title="Promedio / Pan." value={promedioXPanaderia} icon={<Clock size={18} />} />
-          <StatCard title="Último inicio" value={panaderias[0]?.fecha_inicio_servicio ? formatDate(panaderias[0].fecha_inicio_servicio) : '-'} icon={<Calendar size={18} />} />
+        {showAltoView ? (
+          <div className="overflow-x-auto rounded-md border">
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: '10%' }} />
+                <col style={{ width: '60%' }} />
+                <col style={{ width: '20%' }} />
+                <col style={{ width: '10%' }} />
+              </colgroup>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="p-3 text-left">ID</th>
+                  <th className="p-3 text-left">Nombre Comercial</th>
+                  <th className="p-3 text-center">Bolsas / mes</th>
+                  <th className="p-3 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingAlto ? (
+                  <tr><td colSpan="4" className="p-6 text-center text-gray-500">Cargando...</td></tr>
+                ) : visibleAltoConsumo.length === 0 ? (
+                  <tr><td colSpan="4" className="p-4 text-center text-gray-500">No hay panaderías con alto consumo</td></tr>
+                ) : visibleAltoConsumo.map((p, idx) => (
+                  <tr key={p.id_panaderia || idx} className="border-t hover:bg-gray-50">
+                    <td className="p-3">{p.id_panaderia}</td>
+                    <td className="p-3">
+                      <div className="text-sm truncate" title={p.nombre_comercial} style={{ maxWidth: '100%' }}>
+                        {p.nombre_comercial}
+                      </div>
+                    </td>
+                    <td className="p-3 text-center">{p.cantidad_bolsas_mensual}</td>
+                    <td className="p-3 text-center">
+                      <button onClick={() => viewCityInTable(p.ciudad || '')} className="px-3 py-1 bg-green-600 text-white rounded-md text-sm">Ver</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-4 text-sm text-gray-500">Vista oculta — pulsa "Mostrar" para ver panaderías con alto consumo.</div>
+        )}
+      </div>
+
+      {/* SEARCH + STATS (mobile) */}
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="col-span-2">
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-gray-400"><Search size={16} /></span>
+            <input className="w-full pl-10 pr-10 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200" placeholder="Buscar por nombre, ciudad, contacto o RUC..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md hover:bg-gray-100" title="Limpiar"><X size={16} /></button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -310,8 +575,8 @@ const Panaderias = () => {
         </div>
       )}
 
-      {/* TABLE / CARDS */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      {/* MAIN TABLE / CARDS */}
+      <div className="bg-white rounded-xl shadow overflow-hidden mt-4">
         {loading ? (
           <div className="p-6 space-y-4">
             {[1,2,3].map(i => (
@@ -337,6 +602,14 @@ const Panaderias = () => {
                 {/* Desktop Table */}
                 <div className="hidden md:block">
                   <table className="w-full table-fixed">
+                    <colgroup>
+                      <col style={{ width: '32%' }} />
+                      <col style={{ width: '18%' }} />
+                      <col style={{ width: '22%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '10%' }} />
+                      <col style={{ width: '6%' }} />
+                    </colgroup>
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="p-4 text-left">Nombre</th>
@@ -351,13 +624,13 @@ const Panaderias = () => {
                       {filteredPanaderias.map((p, idx) => (
                         <tr key={p.id_panaderia} className={`border-t hover:bg-gray-50 ${idx % 2 === 0 ? '' : 'bg-white'}`}>
                           <td className="p-4">
-                            <div className="font-semibold">{p.nombre_comercial}</div>
+                            <div className="font-semibold truncate" title={p.nombre_comercial} style={{ maxWidth: '420px' }}>{p.nombre_comercial}</div>
                             <div className="text-sm text-gray-500">{p.razon_social || '-'}</div>
                           </td>
                           <td className="p-4">{p.ciudad || '-'}</td>
                           <td className="p-4">
-                            <div>{p.nombre_contacto || '-'}</div>
-                            <div className="text-sm text-gray-500">{p.telefono || p.celular || '-'}</div>
+                            <div className="truncate" title={p.nombre_contacto}>{p.nombre_contacto || '-'}</div>
+                            <div className="text-sm text-gray-500 truncate" title={p.telefono || p.celular}>{p.telefono || p.celular || '-'}</div>
                           </td>
                           <td className="p-4 text-center">{p.cantidad_bolsas_mensual || 0}</td>
                           <td className="p-4 text-center">
@@ -409,7 +682,7 @@ const Panaderias = () => {
         )}
       </div>
 
-      {/* MODAL CREAR / EDITAR */}
+      {/* MODALS (CREAR/EDITAR & VIEW) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white max-w-3xl w-full rounded-xl p-6 overflow-y-auto max-h-[90vh]">
@@ -454,7 +727,6 @@ const Panaderias = () => {
         </div>
       )}
 
-      {/* VIEW MODAL */}
       {showViewModal && selectedPanaderia && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white max-w-md w-full rounded-xl p-6">
@@ -514,8 +786,5 @@ const Panaderias = () => {
     </div>
   );
 };
-
-/* small local fallback icon for stat (keeps imports tidy) */
-const StoreIconFallback = () => <Store size={18} className="text-green-600" />;
 
 export default Panaderias;

@@ -5,9 +5,12 @@ const db = require('../config/database');
 // GET - Obtener todos los cobros
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM cobros ORDER BY fecha_cobro DESC, fecha_registro DESC'
     );
+    
+    const rows = Array.isArray(result[0]) ? result[0] : result;
+    
     res.json({
       success: true,
       data: rows
@@ -25,10 +28,12 @@ router.get('/', async (req, res) => {
 // GET - Obtener un cobro por ID
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM cobros WHERE id_cobro = ?',
       [req.params.id]
     );
+    
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     if (rows.length === 0) {
       return res.status(404).json({
@@ -54,10 +59,12 @@ router.get('/:id', async (req, res) => {
 // GET - Obtener cobros por factura
 router.get('/factura/:id_factura', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM cobros WHERE id_factura = ? ORDER BY fecha_cobro DESC',
       [req.params.id_factura]
     );
+    
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     res.json({
       success: true,
@@ -98,7 +105,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Validar que el monto sea positivo
     if (parseFloat(monto_cobrado) <= 0) {
       return res.status(400).json({
         success: false,
@@ -107,10 +113,11 @@ router.post('/', async (req, res) => {
     }
 
     // Verificar que la factura existe
-    const [factura] = await db.query(
+    const resultFactura = await db.query(
       'SELECT id_factura FROM facturacion WHERE id_factura = ?',
       [id_factura]
     );
+    const factura = Array.isArray(resultFactura[0]) ? resultFactura[0] : resultFactura;
 
     if (factura.length === 0) {
       return res.status(404).json({
@@ -121,10 +128,11 @@ router.post('/', async (req, res) => {
 
     // Verificar si ya existe el número de recibo (si se proporcionó)
     if (numero_recibo) {
-      const [existing] = await db.query(
+      const resultExisting = await db.query(
         'SELECT id_cobro FROM cobros WHERE numero_recibo = ?',
         [numero_recibo]
       );
+      const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
       if (existing.length > 0) {
         return res.status(400).json({
@@ -134,7 +142,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    const [result] = await db.query(
+    const result = await db.query(
       `INSERT INTO cobros (
         id_factura, numero_recibo, fecha_cobro, monto_cobrado,
         metodo_pago, numero_comprobante, banco, numero_cuenta,
@@ -155,17 +163,18 @@ router.post('/', async (req, res) => {
       ]
     );
 
+    const insertId = result.insertId || result[0]?.insertId;
+
     res.status(201).json({
       success: true,
       message: 'Cobro creado exitosamente',
       data: {
-        id_cobro: result.insertId
+        id_cobro: insertId
       }
     });
   } catch (error) {
     console.error('Error al crear cobro:', error);
     
-    // Manejar errores de duplicados
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({
         success: false,
@@ -197,7 +206,6 @@ router.put('/:id', async (req, res) => {
       archivo_comprobante
     } = req.body;
 
-    // Validaciones básicas
     if (!id_factura || !fecha_cobro || !monto_cobrado || !metodo_pago) {
       return res.status(400).json({
         success: false,
@@ -205,7 +213,6 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Validar que el monto sea positivo
     if (parseFloat(monto_cobrado) <= 0) {
       return res.status(400).json({
         success: false,
@@ -214,44 +221,17 @@ router.put('/:id', async (req, res) => {
     }
 
     // Verificar si el cobro existe
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_cobro FROM cobros WHERE id_cobro = ?',
       [req.params.id]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Cobro no encontrado'
       });
-    }
-
-    // Verificar que la factura existe
-    const [factura] = await db.query(
-      'SELECT id_factura FROM facturacion WHERE id_factura = ?',
-      [id_factura]
-    );
-
-    if (factura.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'La factura especificada no existe'
-      });
-    }
-
-    // Verificar si el número de recibo ya existe en otro cobro
-    if (numero_recibo) {
-      const [duplicateRecibo] = await db.query(
-        'SELECT id_cobro FROM cobros WHERE numero_recibo = ? AND id_cobro != ?',
-        [numero_recibo, req.params.id]
-      );
-
-      if (duplicateRecibo.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Ya existe otro cobro con este número de recibo'
-        });
-      }
     }
 
     await db.query(
@@ -289,7 +269,6 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error al actualizar cobro:', error);
     
-    // Manejar errores de duplicados
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({
         success: false,
@@ -308,11 +287,11 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar un cobro
 router.delete('/:id', async (req, res) => {
   try {
-    // Verificar si el cobro existe
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_cobro FROM cobros WHERE id_cobro = ?',
       [req.params.id]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -343,7 +322,7 @@ router.delete('/:id', async (req, res) => {
 // GET - Obtener estadísticas de cobros
 router.get('/stats/resumen', async (req, res) => {
   try {
-    const [stats] = await db.query(`
+    const result = await db.query(`
       SELECT 
         COUNT(*) as total_cobros,
         SUM(monto_cobrado) as total_cobrado,
@@ -356,9 +335,12 @@ router.get('/stats/resumen', async (req, res) => {
       FROM cobros
     `);
 
+    const rows = Array.isArray(result) ? (Array.isArray(result[0]) ? result[0] : result) : [result];
+    const stats = rows[0] || {};
+
     res.json({
       success: true,
-      data: stats[0]
+      data: stats
     });
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
@@ -373,7 +355,7 @@ router.get('/stats/resumen', async (req, res) => {
 // GET - Obtener cobros por método de pago
 router.get('/stats/por-metodo', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const result = await db.query(`
       SELECT 
         metodo_pago,
         COUNT(*) as cantidad,
@@ -382,6 +364,8 @@ router.get('/stats/por-metodo', async (req, res) => {
       GROUP BY metodo_pago
       ORDER BY total DESC
     `);
+
+    const rows = Array.isArray(result[0]) ? result[0] : result;
 
     res.json({
       success: true,
@@ -409,14 +393,14 @@ router.get('/stats/por-fecha', async (req, res) => {
       });
     }
 
-    const [rows] = await db.query(
+    const resultRows = await db.query(
       `SELECT * FROM cobros 
        WHERE fecha_cobro BETWEEN ? AND ?
        ORDER BY fecha_cobro DESC`,
       [fecha_inicio, fecha_fin]
     );
 
-    const [totales] = await db.query(
+    const resultTotales = await db.query(
       `SELECT 
         COUNT(*) as total_cobros,
         SUM(monto_cobrado) as total_cobrado
@@ -425,11 +409,14 @@ router.get('/stats/por-fecha', async (req, res) => {
       [fecha_inicio, fecha_fin]
     );
 
+    const rows = Array.isArray(resultRows[0]) ? resultRows[0] : resultRows;
+    const totalesArr = Array.isArray(resultTotales) ? (Array.isArray(resultTotales[0]) ? resultTotales[0] : resultTotales) : [resultTotales];
+
     res.json({
       success: true,
       data: {
         cobros: rows,
-        resumen: totales[0]
+        resumen: totalesArr[0] || {}
       }
     });
   } catch (error) {

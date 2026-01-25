@@ -1,109 +1,255 @@
-import { useState } from 'react';
-import { DollarSign, CreditCard, CheckCircle, Clock, XCircle, Calendar, Download, Filter, TrendingUp } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  DollarSign, CreditCard, CheckCircle, Clock, XCircle, Calendar, 
+  Download, Filter, TrendingUp, Plus, Edit, Trash2, X
+} from 'lucide-react';
+import { pagosService } from '../../services/api';
+
+const Input = ({ label, name, value, onChange, placeholder, required = false, type = 'text', step }) => (
+  <label className="block">
+    <div className="text-sm font-medium mb-1 flex items-center gap-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </div>
+    <input
+      name={name}
+      value={value || ''}
+      onChange={onChange}
+      placeholder={placeholder}
+      type={type}
+      step={step}
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300"
+    />
+  </label>
+);
+
+const Select = ({ label, name, value, onChange, options, required = false }) => (
+  <label className="block">
+    <div className="text-sm font-medium mb-1 flex items-center gap-1">
+      {label} {required && <span className="text-red-500">*</span>}
+    </div>
+    <select
+      name={name}
+      value={value || ''}
+      onChange={onChange}
+      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300"
+    >
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </label>
+);
+
+const StatCard = ({ title, value, icon, bg = 'bg-white' }) => (
+  <div className={`p-4 rounded-xl shadow-sm ${bg}`}>
+    <div className="flex items-center gap-3">
+      <div className="p-3 bg-green-50 rounded-lg">{icon}</div>
+      <div>
+        <div className="text-xs text-gray-500">{title}</div>
+        <div className="text-lg font-bold">{value}</div>
+      </div>
+    </div>
+  </div>
+);
+
+const formatCurrency = (val) => {
+  if (!val) return '$0.00';
+  return `$${Number(val).toLocaleString('es-EC', { minimumFractionDigits: 2 })}`;
+};
+
+const formatDate = (d) => {
+  if (!d) return '-';
+  try {
+    return new Date(d).toLocaleDateString();
+  } catch {
+    return d;
+  }
+};
+
+const getEstadoColor = (estado) => {
+  switch (estado?.toLowerCase()) {
+    case 'pagado': case 'completado': return 'bg-green-100 text-green-700';
+    case 'pendiente': return 'bg-yellow-100 text-yellow-700';
+    case 'en_proceso': case 'procesando': return 'bg-blue-100 text-blue-700';
+    default: return 'bg-gray-100 text-gray-700';
+  }
+};
+
+const getEstadoIcon = (estado) => {
+  switch (estado?.toLowerCase()) {
+    case 'pagado': case 'completado': return CheckCircle;
+    case 'pendiente': return Clock;
+    case 'en_proceso': case 'procesando': return TrendingUp;
+    default: return XCircle;
+  }
+};
 
 const Pagos = () => {
+  const [pagos, setPagos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('Todos');
 
-  const pagos = [
-    { id: 1, campana: 'Campaña Verano 2025', anunciante: 'Coca-Cola', monto: 5000, fecha: '2025-01-15', metodoPago: 'Transferencia', estado: 'Pagado', factura: 'FAC-001' },
-    { id: 2, campana: 'Lanzamiento Producto', anunciante: 'Nestlé', monto: 4200, fecha: '2025-01-18', metodoPago: 'Tarjeta', estado: 'Pagado', factura: 'FAC-002' },
-    { id: 3, campana: 'Promo Especial', anunciante: 'Pronaca', monto: 3500, fecha: '2025-01-25', metodoPago: 'Transferencia', estado: 'Pendiente', factura: 'FAC-003' },
-    { id: 4, campana: 'Campaña Premium', anunciante: 'Supermaxi', monto: 8000, fecha: '2025-01-20', metodoPago: 'Cheque', estado: 'En Proceso', factura: 'FAC-004' },
-    { id: 5, campana: 'Black Friday', anunciante: 'Supermaxi', monto: 6500, fecha: '2024-11-28', metodoPago: 'Transferencia', estado: 'Pagado', factura: 'FAC-005' },
-    { id: 6, campana: 'Campaña Digital', anunciante: 'La Fabril', monto: 2800, fecha: '2025-01-30', metodoPago: 'Tarjeta', estado: 'Pendiente', factura: 'FAC-006' },
-  ];
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState('create');
+  const [selectedPago, setSelectedPago] = useState(null);
 
-  const estados = ['Todos', 'Pagado', 'Pendiente', 'En Proceso'];
-  
-  const pagosFiltrados = filtroEstado === 'Todos' 
-    ? pagos 
-    : pagos.filter(p => p.estado === filtroEstado);
+  const [formData, setFormData] = useState({
+    id_franquiciado: '',
+    id_franquicia: '',
+    tipo_pago: '',
+    monto: '',
+    fecha_pago: '',
+    metodo_pago: 'efectivo',
+    numero_comprobante: '',
+    estado: 'pendiente',
+    observaciones: ''
+  });
 
-  const totalIngresos = pagos.filter(p => p.estado === 'Pagado').reduce((acc, p) => acc + p.monto, 0);
-  const pagosPendientes = pagos.filter(p => p.estado === 'Pendiente').reduce((acc, p) => acc + p.monto, 0);
-  const pagadosCount = pagos.filter(p => p.estado === 'Pagado').length;
-  const pendientesCount = pagos.filter(p => p.estado === 'Pendiente').length;
+  useEffect(() => {
+    cargarPagos();
+  }, []);
 
-  const getEstadoColor = (estado) => {
-    switch(estado) {
-      case 'Pagado': return 'bg-green-100 text-green-700';
-      case 'Pendiente': return 'bg-yellow-100 text-yellow-700';
-      case 'En Proceso': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
+  const cargarPagos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await pagosService.getAll();
+      const data = res.data?.data || res.data || [];
+      setPagos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error al cargar pagos:', err);
+      setError('Error al cargar los pagos');
+      setPagos([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getEstadoIcon = (estado) => {
-    switch(estado) {
-      case 'Pagado': return CheckCircle;
-      case 'Pendiente': return Clock;
-      case 'En Proceso': return TrendingUp;
-      default: return XCircle;
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      id_franquiciado: '',
+      id_franquicia: '',
+      tipo_pago: '',
+      monto: '',
+      fecha_pago: '',
+      metodo_pago: 'efectivo',
+      numero_comprobante: '',
+      estado: 'pendiente',
+      observaciones: ''
+    });
+    setSelectedPago(null);
+  };
+
+  const handleCreate = () => {
+    resetForm();
+    setModalMode('create');
+    setShowModal(true);
+  };
+
+  const handleEdit = (pago) => {
+    setSelectedPago(pago);
+    setModalMode('edit');
+    setFormData({ ...pago });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.monto || !formData.fecha_pago) {
+      alert('Completa los campos obligatorios');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      if (modalMode === 'create') {
+        await pagosService.create(formData);
+      } else {
+        await pagosService.update(selectedPago.id_pago, formData);
+      }
+      setShowModal(false);
+      resetForm();
+      await cargarPagos();
+    } catch (err) {
+      console.error('Error al guardar:', err);
+      alert('Error al guardar el pago');
+    } finally {
+      setSaving(false);
     }
   };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar este pago?')) return;
+    try {
+      await pagosService.delete(id);
+      cargarPagos();
+    } catch (err) {
+      console.error('Error al eliminar:', err);
+      alert('Error al eliminar');
+    }
+  };
+
+  const estados = ['Todos', 'pendiente', 'pagado', 'completado', 'en_proceso'];
+
+  const pagosFiltrados = useMemo(() => {
+    if (filtroEstado === 'Todos') return pagos;
+    return pagos.filter(p => p.estado?.toLowerCase() === filtroEstado.toLowerCase());
+  }, [pagos, filtroEstado]);
+
+  const totalIngresos = useMemo(() => 
+    pagos.filter(p => ['pagado', 'completado'].includes(p.estado?.toLowerCase()))
+      .reduce((acc, p) => acc + Number(p.monto || 0), 0),
+    [pagos]
+  );
+
+  const pagosPendientes = useMemo(() =>
+    pagos.filter(p => p.estado?.toLowerCase() === 'pendiente')
+      .reduce((acc, p) => acc + Number(p.monto || 0), 0),
+    [pagos]
+  );
+
+  const pagadosCount = pagos.filter(p => ['pagado', 'completado'].includes(p.estado?.toLowerCase())).length;
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-7xl mx-auto p-6">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h2 className="text-4xl font-black text-gray-900 mb-2">Gestión de Pagos</h2>
-          <p className="text-gray-600">Administra pagos de anunciantes y campañas</p>
-        </div>
-        <button className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl font-semibold">
-          <Download size={20} />
-          Exportar Reporte
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-green-500 to-green-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <DollarSign size={28} />
-            <CheckCircle size={20} className="opacity-70" />
-          </div>
-          <p className="text-3xl font-black mb-1">${(totalIngresos / 1000).toFixed(1)}K</p>
-          <p className="text-sm opacity-90">Total Cobrado</p>
+          <h2 className="text-3xl font-extrabold">Gestión de Pagos</h2>
+          <p className="text-sm text-gray-500 mt-1">Administra pagos de franquiciados</p>
         </div>
 
-        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <Clock size={28} />
-            <DollarSign size={20} className="opacity-70" />
-          </div>
-          <p className="text-3xl font-black mb-1">${(pagosPendientes / 1000).toFixed(1)}K</p>
-          <p className="text-sm opacity-90">Por Cobrar</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <CheckCircle size={28} />
-          </div>
-          <p className="text-3xl font-black mb-1">{pagadosCount}</p>
-          <p className="text-sm opacity-90">Pagos Completados</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-6 rounded-2xl text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <Clock size={28} />
-          </div>
-          <p className="text-3xl font-black mb-1">{pendientesCount}</p>
-          <p className="text-sm opacity-90">Pagos Pendientes</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6 mb-6">
         <div className="flex items-center gap-3">
-          <Filter size={20} className="text-gray-600" />
-          <span className="font-semibold text-gray-700">Filtrar por estado:</span>
-          <div className="flex gap-2">
+          <div className="hidden md:grid grid-cols-3 gap-3 mr-4">
+            <StatCard title="Total Cobrado" value={formatCurrency(totalIngresos)} icon={<DollarSign size={18} className="text-green-600" />} />
+            <StatCard title="Por Cobrar" value={formatCurrency(pagosPendientes)} icon={<Clock size={18} className="text-green-600" />} />
+            <StatCard title="Completados" value={pagadosCount} icon={<CheckCircle size={18} className="text-green-600" />} />
+          </div>
+
+          <button onClick={handleCreate} className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-700 transition">
+            <Plus size={16} />
+            Nuevo
+          </button>
+        </div>
+      </div>
+
+      {/* FILTERS */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Filter size={18} className="text-gray-600" />
+          <span className="font-semibold text-gray-700">Filtrar:</span>
+          <div className="flex gap-2 flex-wrap">
             {estados.map((estado) => (
               <button
                 key={estado}
                 onClick={() => setFiltroEstado(estado)}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition ${
                   filtroEstado === estado
                     ? 'bg-green-600 text-white shadow-md'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -113,86 +259,159 @@ const Pagos = () => {
               </button>
             ))}
           </div>
+
+          <div className="ml-auto text-sm text-gray-500">
+            <span className="font-medium">{pagosFiltrados.length}</span> resultados
+          </div>
         </div>
       </div>
 
-      {/* Payments Table */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Factura</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Campaña</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-gray-700">Anunciante</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Monto</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Fecha</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Método</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Estado</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-gray-700">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {pagosFiltrados.map((pago) => {
-                const Icon = getEstadoIcon(pago.estado);
-                return (
-                  <tr key={pago.id} className="hover:bg-green-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <span className="font-mono font-bold text-gray-800">{pago.factura}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-gray-800">{pago.campana}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center text-white text-xs font-bold">
-                          {pago.anunciante.charAt(0)}
-                        </div>
-                        <span className="text-gray-700">{pago.anunciante}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-lg font-black text-green-600">
-                        ${pago.monto.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-1 text-sm text-gray-600">
-                        <Calendar size={14} />
-                        {pago.fecha}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">
-                        <CreditCard size={12} />
-                        {pago.metodoPago}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${getEstadoColor(pago.estado)}`}>
-                        <Icon size={14} />
-                        {pago.estado}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <button className="p-2 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors" title="Ver comprobante">
-                          <Download size={18} />
-                        </button>
-                        {pago.estado === 'Pendiente' && (
-                          <button className="p-2 hover:bg-green-100 text-green-600 rounded-lg transition-colors" title="Marcar como pagado">
-                            <CheckCircle size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* ERROR */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
+          {error}
         </div>
+      )}
+
+      {/* TABLE */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        {loading ? (
+          <div className="p-10 text-center">Cargando...</div>
+        ) : pagosFiltrados.length === 0 ? (
+          <div className="p-10 text-center text-gray-500">No hay pagos registrados</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-green-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">ID</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Franquiciado</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold">Tipo</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Monto</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Fecha</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Método</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Estado</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pagosFiltrados.map((pago) => {
+                  const Icon = getEstadoIcon(pago.estado);
+                  return (
+                    <tr key={pago.id_pago} className="hover:bg-green-50/40 transition-colors">
+                      <td className="px-4 py-3">#{pago.id_pago}</td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold">
+                          {pago.franquiciado_nombres} {pago.franquiciado_apellidos}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">{pago.tipo_pago || '-'}</td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="text-green-600 font-bold">{formatCurrency(pago.monto)}</div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1 text-sm">
+                          <Calendar size={14} />
+                          <span>{formatDate(pago.fecha_pago)}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                          <CreditCard size={12} />
+                          {pago.metodo_pago}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${getEstadoColor(pago.estado)}`}>
+                          <Icon size={12} />
+                          {pago.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="inline-flex gap-1">
+                          <button onClick={() => handleEdit(pago)} className="p-2 rounded-md hover:bg-gray-100" title="Editar">
+                            <Edit size={16} />
+                          </button>
+                          <button onClick={() => handleDelete(pago.id_pago)} className="p-2 rounded-md hover:bg-gray-100 text-red-600" title="Eliminar">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* MODAL */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white max-w-3xl w-full rounded-xl p-6 overflow-y-auto max-h-[90vh]">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-xl font-bold">{modalMode === 'create' ? 'Nuevo Pago' : 'Editar Pago'}</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 rounded-md hover:bg-gray-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="ID Franquiciado" name="id_franquiciado" value={formData.id_franquiciado} onChange={handleInputChange} type="number" />
+              <Input label="ID Franquicia" name="id_franquicia" value={formData.id_franquicia} onChange={handleInputChange} type="number" />
+              <Input label="Tipo de Pago" name="tipo_pago" value={formData.tipo_pago} onChange={handleInputChange} />
+              <Input label="Monto" name="monto" value={formData.monto} onChange={handleInputChange} type="number" step="0.01" required />
+              <Input label="Fecha" name="fecha_pago" value={formData.fecha_pago} onChange={handleInputChange} type="date" required />
+              <Select
+                label="Método de Pago"
+                name="metodo_pago"
+                value={formData.metodo_pago}
+                onChange={handleInputChange}
+                options={[
+                  { value: 'efectivo', label: 'Efectivo' },
+                  { value: 'transferencia', label: 'Transferencia' },
+                  { value: 'cheque', label: 'Cheque' },
+                  { value: 'tarjeta', label: 'Tarjeta' }
+                ]}
+              />
+              <Input label="Nº Comprobante" name="numero_comprobante" value={formData.numero_comprobante} onChange={handleInputChange} />
+              <Select
+                label="Estado"
+                name="estado"
+                value={formData.estado}
+                onChange={handleInputChange}
+                options={[
+                  { value: 'pendiente', label: 'Pendiente' },
+                  { value: 'pagado', label: 'Pagado' },
+                  { value: 'completado', label: 'Completado' },
+                  { value: 'en_proceso', label: 'En Proceso' }
+                ]}
+              />
+            </div>
+
+            <div className="mt-4">
+              <label className="block">
+                <div className="text-sm font-medium mb-1">Observaciones</div>
+                <textarea
+                  name="observaciones"
+                  value={formData.observaciones || ''}
+                  onChange={handleInputChange}
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300"
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => { setShowModal(false); resetForm(); }} className="px-4 py-2 border rounded-lg">Cancelar</button>
+              <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-60">
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

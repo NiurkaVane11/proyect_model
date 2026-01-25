@@ -1,3 +1,5 @@
+BigInt.prototype.toJSON = function() { return Number(this.toString()) };
+
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -26,7 +28,8 @@ app.get('/', (req, res) => {
       produccion: '/api/produccion',
       facturacion: '/api/facturacion',
       distribucion: '/api/distribucion',
-      inventario: '/api/inventario' 
+      inventario: '/api/inventario',
+      pagos: '/api/pagos'
     }
   });
 });
@@ -44,7 +47,8 @@ app.get('/api', (req, res) => {
       produccion: '/api/produccion',
       facturacion: '/api/facturacion',
       distribucion: '/api/distribucion',
-      inventario: '/api/inventario'
+      inventario: '/api/inventario',
+      pagos: '/api/pagos'
 
     }
   });
@@ -59,6 +63,7 @@ const produccionRoutes = require('./routes/produccion');
 const facturacionRoutes = require('./routes/facturacion');
 const distribucionRoutes = require('./routes/distribucion');
 const inventarioRoutes = require('./routes/inventario');
+const pagosRoutes = require('./routes/pagos');
 
 // Usar rutas
 app.use('/api/anunciantes', anunciantesRoutes);
@@ -69,6 +74,7 @@ app.use('/api/produccion', produccionRoutes);
 app.use('/api/facturacion', facturacionRoutes);
 app.use('/api/distribucion', distribucionRoutes);
 app.use('/api/inventario', inventarioRoutes);
+app.use('/api/pagos', pagosRoutes);
 
 
 // Manejo de rutas no encontradas

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import Anunciantes from './Anunciantes';
-import Donaciones from './Donaciones';
 import Panaderias from './Panaderias';
 import Distribucion from './Distribucion';
 import Inventario from './Inventario';
@@ -40,8 +39,7 @@ const AdminPanel = () => {
         return <Produccion />;
       case 'anunciantes':
         return <Anunciantes />;
-      case 'donaciones':
-        return <Donaciones />;
+      
       case 'panaderias':
         return <Panaderias />;
       case 'distribucion':

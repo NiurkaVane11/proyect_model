@@ -1,3 +1,4 @@
+//api.js - Servicio de API para la aplicación de gestión de panaderías y anunciantes
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
@@ -18,24 +19,45 @@ export const anunciantesService = {
   delete: (id) => api.delete(`/anunciantes/${id}`)
 };
 
+
 // Servicios para Panaderías
 export const panaderiasService = {
+  // --- CRUD Básico ---
   getAll: () => api.get('/panaderias'),
   getById: (id) => api.get(`/panaderias/${id}`),
   create: (data) => api.post('/panaderias', data),
   update: (id, data) => api.put(`/panaderias/${id}`, data),
   delete: (id) => api.delete(`/panaderias/${id}`),
+
+  // --- Filtros Específicos ---
+  getActivas: () => api.get('/panaderias/activas'),
   getByEstado: (estado) => api.get(`/panaderias/estado/${estado}`),
-  getByCiudad: (ciudad) => api.get(`/panaderias/ciudad/${ciudad}`),
-  getStats: () => api.get('/panaderias/stats/general')
+  getPorCiudad: (ciudad) => api.get(`/panaderias/ciudad/${ciudad}`),
+
+  // --- Vistas y Reportes ---
+  // Esta es la que usa tu CityFilterPanel
+  getVistasPorCiudad: () => api.get('/panaderias/vistas/por-ciudad'),
+  getAltoConsumo: () => api.get('/panaderias/vistas/alto-consumo'),
+  getStats: () => api.get('/panaderias/stats/general'),
 };
+
+
+
+
+
+
+
+
+
+
 
 export const franquiciadosService = {
   getAll: () => api.get('/franquiciados'),
   getById: (id) => api.get(`/franquiciados/${id}`),
   create: (data) => api.post('/franquiciados', data),
   update: (id, data) => api.put(`/franquiciados/${id}`, data),
-  delete: (id) => api.delete(`/franquiciados/${id}`)
+  delete: (id) => api.delete(`/franquiciados/${id}`),
+  getStats: () => api.get('/franquiciados/stats') // ✅ Agrega esto
 };
 
 export const cobrosService = {
@@ -104,6 +126,17 @@ export const inventarioService = {
   create: (data) => api.post('/inventario', data),
   update: (id, data) => api.put(`/inventario/${id}`, data),
   delete: (id) => api.delete(`/inventario/${id}`)
+};
+
+// Servicio de Pagos
+export const pagosService = {
+  getAll: () => api.get('/pagos'),
+  getById: (id) => api.get(`/pagos/${id}`),
+  getByFranquiciado: (idFranquiciado) => api.get(`/pagos/franquiciado/${idFranquiciado}`),
+  getByFranquicia: (idFranquicia) => api.get(`/pagos/franquicia/${idFranquicia}`),
+  create: (data) => api.post('/pagos', data),
+  update: (id, data) => api.put(`/pagos/${id}`, data),
+  delete: (id) => api.delete(`/pagos/${id}`)
 };
 
 export default api;

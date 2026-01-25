@@ -15,7 +15,6 @@ import {
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeSection, setActiveSection, handleLogout }) => {
   const menuItems = [
     { id: 'anunciantes', name: 'Anunciantes', icon: Megaphone },
-    { id: 'donaciones', name: 'Donaciones', icon: Radio },
     { id: 'panaderias', name: 'Panaderías', icon: Store },
     { id: 'distribucion', name: 'Distribución', icon: Package },
     { id: 'pagos', name: 'Pagos', icon: DollarSign },

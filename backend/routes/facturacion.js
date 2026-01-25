@@ -5,9 +5,11 @@ const db = require('../config/database');
 // GET - Obtener todas las facturas
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM facturacion ORDER BY fecha_emision DESC, fecha_registro DESC'
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
+    
     res.json({
       success: true,
       data: rows
@@ -25,10 +27,11 @@ router.get('/', async (req, res) => {
 // GET - Obtener una factura por ID
 router.get('/:id', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM facturacion WHERE id_factura = ?',
       [req.params.id]
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     if (rows.length === 0) {
       return res.status(404).json({
@@ -54,10 +57,11 @@ router.get('/:id', async (req, res) => {
 // GET - Obtener facturas por anunciante
 router.get('/anunciante/:id_anunciante', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       'SELECT * FROM facturacion WHERE id_anunciante = ? ORDER BY fecha_emision DESC',
       [req.params.id_anunciante]
     );
+    const rows = Array.isArray(result[0]) ? result[0] : result;
     
     res.json({
       success: true,
@@ -100,7 +104,6 @@ router.post('/', async (req, res) => {
       usuario_registro
     } = req.body;
 
-    // Validaciones básicas
     if (!id_anunciante || !numero_factura || !fecha_emision || !fecha_vencimiento || !subtotal || !concepto) {
       return res.status(400).json({
         success: false,
@@ -108,7 +111,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Validar que el subtotal sea positivo
     if (parseFloat(subtotal) <= 0) {
       return res.status(400).json({
         success: false,
@@ -116,11 +118,11 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Verificar que el anunciante existe
-    const [anunciante] = await db.query(
+    const resultAnunciante = await db.query(
       'SELECT id_anunciante FROM anunciantes WHERE id_anunciante = ?',
       [id_anunciante]
     );
+    const anunciante = Array.isArray(resultAnunciante[0]) ? resultAnunciante[0] : resultAnunciante;
 
     if (anunciante.length === 0) {
       return res.status(404).json({
@@ -129,11 +131,11 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Verificar si ya existe el número de factura
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_factura FROM facturacion WHERE numero_factura = ?',
       [numero_factura]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length > 0) {
       return res.status(400).json({
@@ -142,13 +144,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Calcular valores automáticos si no vienen
     const iva = porcentaje_iva || 15.00;
     const calculatedValorIva = valor_iva || (parseFloat(subtotal) * parseFloat(iva) / 100).toFixed(2);
     const calculatedTotal = total || (parseFloat(subtotal) + parseFloat(calculatedValorIva)).toFixed(2);
     const calculatedSaldo = saldo_pendiente || (parseFloat(calculatedTotal) - parseFloat(monto_pagado || 0)).toFixed(2);
 
-    const [result] = await db.query(
+    const result = await db.query(
       `INSERT INTO facturacion (
         id_anunciante, numero_factura, numero_autorizacion_sri, clave_acceso,
         fecha_emision, fecha_vencimiento, subtotal, porcentaje_iva, valor_iva,
@@ -157,36 +158,20 @@ router.post('/', async (req, res) => {
         observaciones, usuario_registro
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id_anunciante,
-        numero_factura,
-        numero_autorizacion_sri || null,
-        clave_acceso || null,
-        fecha_emision,
-        fecha_vencimiento,
-        subtotal,
-        iva,
-        calculatedValorIva,
-        calculatedTotal,
-        concepto,
-        cantidad_fundas || null,
-        precio_unitario || null,
-        periodo_servicio || null,
-        estado_factura || 'emitida',
-        monto_pagado || 0.00,
-        calculatedSaldo,
-        archivo_xml || null,
-        archivo_pdf || null,
-        observaciones || null,
-        usuario_registro || null
+        id_anunciante, numero_factura, numero_autorizacion_sri || null, clave_acceso || null,
+        fecha_emision, fecha_vencimiento, subtotal, iva, calculatedValorIva,
+        calculatedTotal, concepto, cantidad_fundas || null, precio_unitario || null, periodo_servicio || null,
+        estado_factura || 'emitida', monto_pagado || 0.00, calculatedSaldo, archivo_xml || null, archivo_pdf || null,
+        observaciones || null, usuario_registro || null
       ]
     );
+
+    const insertId = result.insertId || result[0]?.insertId;
 
     res.status(201).json({
       success: true,
       message: 'Factura creada exitosamente',
-      data: {
-        id_factura: result.insertId
-      }
+      data: { id_factura: insertId }
     });
   } catch (error) {
     console.error('Error al crear factura:', error);
@@ -210,31 +195,13 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const {
-      id_anunciante,
-      numero_factura,
-      numero_autorizacion_sri,
-      clave_acceso,
-      fecha_emision,
-      fecha_vencimiento,
-      subtotal,
-      porcentaje_iva,
-      valor_iva,
-      total,
-      concepto,
-      cantidad_fundas,
-      precio_unitario,
-      periodo_servicio,
-      estado_factura,
-      monto_pagado,
-      saldo_pendiente,
-      archivo_xml,
-      archivo_pdf,
-      observaciones,
-      motivo_anulacion,
-      fecha_anulacion
+      id_anunciante, numero_factura, numero_autorizacion_sri, clave_acceso,
+      fecha_emision, fecha_vencimiento, subtotal, porcentaje_iva, valor_iva,
+      total, concepto, cantidad_fundas, precio_unitario, periodo_servicio,
+      estado_factura, monto_pagado, saldo_pendiente, archivo_xml, archivo_pdf,
+      observaciones, motivo_anulacion, fecha_anulacion
     } = req.body;
 
-    // Validaciones básicas
     if (!id_anunciante || !numero_factura || !fecha_emision || !fecha_vencimiento || !subtotal || !concepto) {
       return res.status(400).json({
         success: false,
@@ -242,7 +209,6 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Validar que el subtotal sea positivo
     if (parseFloat(subtotal) <= 0) {
       return res.status(400).json({
         success: false,
@@ -250,11 +216,11 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Verificar si la factura existe
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_factura FROM facturacion WHERE id_factura = ?',
       [req.params.id]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -263,33 +229,6 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Verificar que el anunciante existe
-    const [anunciante] = await db.query(
-      'SELECT id_anunciante FROM anunciantes WHERE id_anunciante = ?',
-      [id_anunciante]
-    );
-
-    if (anunciante.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'El anunciante especificado no existe'
-      });
-    }
-
-    // Verificar si el número de factura ya existe en otra factura
-    const [duplicateNumero] = await db.query(
-      'SELECT id_factura FROM facturacion WHERE numero_factura = ? AND id_factura != ?',
-      [numero_factura, req.params.id]
-    );
-
-    if (duplicateNumero.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Ya existe otra factura con este número'
-      });
-    }
-
-    // Calcular valores automáticos
     const iva = porcentaje_iva || 15.00;
     const calculatedValorIva = valor_iva || (parseFloat(subtotal) * parseFloat(iva) / 100).toFixed(2);
     const calculatedTotal = total || (parseFloat(subtotal) + parseFloat(calculatedValorIva)).toFixed(2);
@@ -297,53 +236,18 @@ router.put('/:id', async (req, res) => {
 
     await db.query(
       `UPDATE facturacion SET
-        id_anunciante = ?,
-        numero_factura = ?,
-        numero_autorizacion_sri = ?,
-        clave_acceso = ?,
-        fecha_emision = ?,
-        fecha_vencimiento = ?,
-        subtotal = ?,
-        porcentaje_iva = ?,
-        valor_iva = ?,
-        total = ?,
-        concepto = ?,
-        cantidad_fundas = ?,
-        precio_unitario = ?,
-        periodo_servicio = ?,
-        estado_factura = ?,
-        monto_pagado = ?,
-        saldo_pendiente = ?,
-        archivo_xml = ?,
-        archivo_pdf = ?,
-        observaciones = ?,
-        motivo_anulacion = ?,
-        fecha_anulacion = ?
+        id_anunciante = ?, numero_factura = ?, numero_autorizacion_sri = ?, clave_acceso = ?,
+        fecha_emision = ?, fecha_vencimiento = ?, subtotal = ?, porcentaje_iva = ?, valor_iva = ?,
+        total = ?, concepto = ?, cantidad_fundas = ?, precio_unitario = ?, periodo_servicio = ?,
+        estado_factura = ?, monto_pagado = ?, saldo_pendiente = ?, archivo_xml = ?, archivo_pdf = ?,
+        observaciones = ?, motivo_anulacion = ?, fecha_anulacion = ?
       WHERE id_factura = ?`,
       [
-        id_anunciante,
-        numero_factura,
-        numero_autorizacion_sri || null,
-        clave_acceso || null,
-        fecha_emision,
-        fecha_vencimiento,
-        subtotal,
-        iva,
-        calculatedValorIva,
-        calculatedTotal,
-        concepto,
-        cantidad_fundas || null,
-        precio_unitario || null,
-        periodo_servicio || null,
-        estado_factura || 'emitida',
-        monto_pagado || 0.00,
-        calculatedSaldo,
-        archivo_xml || null,
-        archivo_pdf || null,
-        observaciones || null,
-        motivo_anulacion || null,
-        fecha_anulacion || null,
-        req.params.id
+        id_anunciante, numero_factura, numero_autorizacion_sri || null, clave_acceso || null,
+        fecha_emision, fecha_vencimiento, subtotal, iva, calculatedValorIva,
+        calculatedTotal, concepto, cantidad_fundas || null, precio_unitario || null, periodo_servicio || null,
+        estado_factura || 'emitida', monto_pagado || 0.00, calculatedSaldo, archivo_xml || null, archivo_pdf || null,
+        observaciones || null, motivo_anulacion || null, fecha_anulacion || null, req.params.id
       ]
     );
 
@@ -353,14 +257,6 @@ router.put('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Error al actualizar factura:', error);
-    
-    if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({
-        success: false,
-        message: 'Ya existe una factura con este número'
-      });
-    }
-    
     res.status(500).json({
       success: false,
       message: 'Error al actualizar la factura',
@@ -372,11 +268,11 @@ router.put('/:id', async (req, res) => {
 // DELETE - Eliminar una factura
 router.delete('/:id', async (req, res) => {
   try {
-    // Verificar si la factura existe
-    const [existing] = await db.query(
+    const resultExisting = await db.query(
       'SELECT id_factura FROM facturacion WHERE id_factura = ?',
       [req.params.id]
     );
+    const existing = Array.isArray(resultExisting[0]) ? resultExisting[0] : resultExisting;
 
     if (existing.length === 0) {
       return res.status(404).json({
@@ -385,11 +281,11 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // Verificar si hay cobros asociados
-    const [cobros] = await db.query(
+    const resultCobros = await db.query(
       'SELECT id_cobro FROM cobros WHERE id_factura = ?',
       [req.params.id]
     );
+    const cobros = Array.isArray(resultCobros[0]) ? resultCobros[0] : resultCobros;
 
     if (cobros.length > 0) {
       return res.status(400).json({
@@ -420,7 +316,7 @@ router.delete('/:id', async (req, res) => {
 // GET - Obtener estadísticas de facturación
 router.get('/stats/resumen', async (req, res) => {
   try {
-    const [stats] = await db.query(`
+    const result = await db.query(`
       SELECT 
         COUNT(*) as total_facturas,
         SUM(total) as total_facturado,
@@ -435,9 +331,12 @@ router.get('/stats/resumen', async (req, res) => {
       FROM facturacion
     `);
 
+    const rows = Array.isArray(result) ? (Array.isArray(result[0]) ? result[0] : result) : [result];
+    const stats = rows[0] || {};
+
     res.json({
       success: true,
-      data: stats[0]
+      data: stats
     });
   } catch (error) {
     console.error('Error al obtener estadísticas:', error);
@@ -452,7 +351,7 @@ router.get('/stats/resumen', async (req, res) => {
 // GET - Obtener facturas por estado
 router.get('/stats/por-estado', async (req, res) => {
   try {
-    const [rows] = await db.query(`
+    const result = await db.query(`
       SELECT 
         estado_factura,
         COUNT(*) as cantidad,
@@ -462,6 +361,8 @@ router.get('/stats/por-estado', async (req, res) => {
       GROUP BY estado_factura
       ORDER BY cantidad DESC
     `);
+    
+    const rows = Array.isArray(result[0]) ? result[0] : result;
 
     res.json({
       success: true,
@@ -489,14 +390,14 @@ router.get('/stats/por-fecha', async (req, res) => {
       });
     }
 
-    const [rows] = await db.query(
+    const resultRows = await db.query(
       `SELECT * FROM facturacion 
        WHERE fecha_emision BETWEEN ? AND ?
        ORDER BY fecha_emision DESC`,
       [fecha_inicio, fecha_fin]
     );
 
-    const [totales] = await db.query(
+    const resultTotales = await db.query(
       `SELECT 
         COUNT(*) as total_facturas,
         SUM(total) as total_facturado,
@@ -507,11 +408,14 @@ router.get('/stats/por-fecha', async (req, res) => {
       [fecha_inicio, fecha_fin]
     );
 
+    const rows = Array.isArray(resultRows[0]) ? resultRows[0] : resultRows;
+    const totalesArr = Array.isArray(resultTotales) ? (Array.isArray(resultTotales[0]) ? resultTotales[0] : resultTotales) : [resultTotales];
+
     res.json({
       success: true,
       data: {
         facturas: rows,
-        resumen: totales[0]
+        resumen: totalesArr[0] || {}
       }
     });
   } catch (error) {
@@ -527,12 +431,14 @@ router.get('/stats/por-fecha', async (req, res) => {
 // GET - Obtener facturas vencidas
 router.get('/stats/vencidas', async (req, res) => {
   try {
-    const [rows] = await db.query(
+    const result = await db.query(
       `SELECT * FROM facturacion 
        WHERE fecha_vencimiento < CURDATE() 
        AND estado_factura NOT IN ('pagada', 'anulada')
        ORDER BY fecha_vencimiento ASC`
     );
+    
+    const rows = Array.isArray(result[0]) ? result[0] : result;
 
     res.json({
       success: true,
@@ -560,11 +466,11 @@ router.put('/:id/registrar-pago', async (req, res) => {
       });
     }
 
-    // Obtener la factura actual
-    const [factura] = await db.query(
+    const result = await db.query(
       'SELECT total, monto_pagado, saldo_pendiente FROM facturacion WHERE id_factura = ?',
       [req.params.id]
     );
+    const factura = Array.isArray(result[0]) ? result[0] : result;
 
     if (factura.length === 0) {
       return res.status(404).json({
