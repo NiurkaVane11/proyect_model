@@ -17,8 +17,11 @@ export const anunciantesService = {
   create: (data) => api.post('/anunciantes', data),
   update: (id, data) => api.put(`/anunciantes/${id}`, data),
   delete: (id) => api.delete(`/anunciantes/${id}`)
-};
 
+};
+export const vistasService = {
+  getAnunciantesPorSector: () => api.get('/vistas/anunciantes-por-sector')
+};
 
 // Servicios para Panaderías
 export const panaderiasService = {

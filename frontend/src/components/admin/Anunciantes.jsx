@@ -1,18 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Plus, Search, Edit, Trash2, Eye, MapPin, Phone, Mail, CheckCircle,
-  XCircle, AlertCircle, X, Building
+  XCircle, AlertCircle, X, Building, BarChart3, TrendingUp
 } from 'lucide-react';
-import { anunciantesService } from '../../services/api';
-
-/*
-  Estilo adaptado desde la versión "Panaderias":
-  - Cabecera con estadísticas
-  - Búsqueda con debounce + limpiar
-  - Tabla responsiva + tarjetas móviles
-  - Modal con inputs estilizados y view modal con íconos
-  NOTA: La lógica de peticiones y validaciones principales se mantiene igual
-*/
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { anunciantesService, vistasService } from '../../services/api';
 
 const Input = ({ label, name, value, onChange, placeholder, required = false, type = 'text' }) => (
   <label className="block">
@@ -52,20 +44,13 @@ const StatCard = ({ title, value, icon, bg = 'bg-white' }) => (
   </div>
 );
 
-const formatDate = (d) => {
-  if (!d) return '-';
-  try {
-    const dt = new Date(d);
-    return dt.toLocaleDateString();
-  } catch {
-    return d;
-  }
-};
-
 export default function Anunciantes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [anunciantes, setAnunciantes] = useState([]);
+  const [sectoresData, setSectoresData] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -90,7 +75,6 @@ export default function Anunciantes() {
     ciudad: '',
     provincia: '',
     sitio_web: '',
-    observaciones: '',
     estado: 'activo'
   });
 
@@ -98,7 +82,12 @@ export default function Anunciantes() {
     fetchAnunciantes();
   }, []);
 
-  // debounce search
+  useEffect(() => {
+    if (showStats && sectoresData.length === 0) {
+      fetchSectoresData();
+    }
+  }, [showStats]);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
     return () => clearTimeout(t);
@@ -117,6 +106,20 @@ export default function Anunciantes() {
       setAnunciantes([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSectoresData = async () => {
+    try {
+      setLoadingStats(true);
+      const response = await vistasService.getAnunciantesPorSector();
+      const data = response?.data?.data || response?.data || [];
+      setSectoresData(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Error al cargar estadísticas:', err);
+      setSectoresData([]);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -143,7 +146,6 @@ export default function Anunciantes() {
       ciudad: '',
       provincia: '',
       sitio_web: '',
-      observaciones: '',
       estado: 'activo'
     });
     setEditingId(null);
@@ -171,7 +173,6 @@ export default function Anunciantes() {
       ciudad: anunciante.ciudad || '',
       provincia: anunciante.provincia || '',
       sitio_web: anunciante.sitio_web || '',
-      observaciones: anunciante.observaciones || '',
       estado: anunciante.estado || 'activo'
     });
     setEditingId(anunciante.id_anunciante);
@@ -184,7 +185,6 @@ export default function Anunciantes() {
   };
 
   const handleSubmit = async () => {
-    // keep same required fields as original
     if (!formData.razon_social || !formData.ruc || !formData.email) {
       alert('Por favor completa los campos obligatorios: Razón Social, RUC y Email');
       return;
@@ -222,11 +222,9 @@ export default function Anunciantes() {
     }
   };
 
-  // derived stats
   const total = anunciantes.length;
   const activos = anunciantes.filter(a => a.estado === 'activo').length;
 
-  // filtered list
   const filtered = useMemo(() => {
     let list = anunciantes;
     if (soloActivos) list = list.filter(a => a.estado === 'activo');
@@ -247,7 +245,7 @@ export default function Anunciantes() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold">📢 Anunciantes</h1>
+          <h1 className="text-3xl font-extrabold">Anunciantes</h1>
           <p className="text-sm text-gray-500 mt-1">Gestiona tus anunciantes — contactos, estado y datos de contacto.</p>
         </div>
 
@@ -298,7 +296,72 @@ export default function Anunciantes() {
             )}
           </div>
         </div>
+        <div>
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className="w-full inline-flex items-center justify-center gap-2 bg-white border border-gray-200 px-4 py-3 rounded-lg shadow-sm hover:bg-gray-50 transition"
+          >
+            <BarChart3 size={16} />
+            {showStats ? 'Ocultar Estadísticas' : 'Ver Estadísticas'}
+          </button>
+        </div>
       </div>
+
+      {/* ESTADÍSTICAS POR SECTOR */}
+      {showStats && (
+        <div className="mb-6 bg-white rounded-xl shadow p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="text-indigo-600" size={20} />
+            <h2 className="text-lg font-bold">Anunciantes por Sector Comercial</h2>
+          </div>
+
+          {loadingStats ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="text-gray-500">Cargando estadísticas...</div>
+            </div>
+          ) : sectoresData.length === 0 ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="text-gray-500">No hay datos disponibles</div>
+            </div>
+          ) : (
+            <>
+              {/* Gráfico de barras */}
+              <div className="h-64 mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sectoresData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="sector_comercial" angle={-45} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="total" fill="#4f46e5" name="Total Anunciantes" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Tabla resumen */}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="p-3 text-left font-semibold">Sector Comercial</th>
+                      <th className="p-3 text-right font-semibold">Total Anunciantes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sectoresData.map((sector, idx) => (
+                      <tr key={idx} className="border-t hover:bg-gray-50">
+                        <td className="p-3">{sector.sector_comercial || 'Sin especificar'}</td>
+                        <td className="p-3 text-right font-semibold text-indigo-600">{sector.total}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ERROR */}
       {error && (
@@ -369,7 +432,9 @@ export default function Anunciantes() {
                           <td className="p-4">{a.telefono || a.celular || '-'}</td>
                           <td className="p-4">{a.ciudad || '-'}</td>
                           <td className="p-4 text-center">
-                            <span className={`px-3 py-1 rounded-full text-sm ${a.estado === 'activo' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700'}`}>
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              a.estado === 'activo' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                            }`}>
                               {a.estado || '-'}
                             </span>
                           </td>
@@ -396,7 +461,9 @@ export default function Anunciantes() {
                           <div className="text-sm text-gray-500">{a.ciudad || '-'} · {a.nombre_comercial || '-'}</div>
                         </div>
                         <div className="text-right">
-                          <div className={`text-sm ${a.estado === 'activo' ? 'text-indigo-600' : 'text-gray-500'}`}>
+                          <div className={`text-sm font-medium ${
+                            a.estado === 'activo' ? 'text-green-600' : 'text-gray-500'
+                          }`}>
                             {a.estado || '-'}
                           </div>
                         </div>
@@ -463,14 +530,22 @@ export default function Anunciantes() {
               <Input label="Provincia" name="provincia" value={formData.provincia} onChange={handleInputChange} placeholder="Provincia" />
               <Input label="Sitio Web" name="sitio_web" value={formData.sitio_web} onChange={handleInputChange} placeholder="https://www.empresa.com" type="url" />
 
+              <label className="block">
+                <div className="text-sm font-medium mb-1">Estado</div>
+                <select
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                >
+                  <option value="activo">Activo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+              </label>
+
               <label className="md:col-span-2 block">
                 <div className="text-sm font-medium mb-1">Dirección</div>
                 <input name="direccion" value={formData.direccion} onChange={handleInputChange} placeholder="Dirección" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200" />
-              </label>
-
-              <label className="md:col-span-2">
-                <div className="text-sm font-medium mb-1">Observaciones</div>
-                <textarea name="observaciones" value={formData.observaciones} onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200" />
               </label>
             </div>
 
@@ -496,6 +571,16 @@ export default function Anunciantes() {
             </div>
 
             <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle size={18} className={
+                  selectedAnunciante.estado === 'activo' ? 'text-green-600' : 'text-gray-600'
+                } />
+                <div>
+                  <div className="text-sm text-gray-500">Estado</div>
+                  <div className="font-medium capitalize">{selectedAnunciante.estado || '-'}</div>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <MapPin size={18} />
                 <div>
@@ -529,11 +614,6 @@ export default function Anunciantes() {
                     </a>
                   ) : '-'}
                 </div>
-              </div>
-
-              <div className="pt-3 border-t">
-                <div className="text-sm text-gray-500">Observaciones</div>
-                <div className="mt-1">{selectedAnunciante.observaciones || '-'}</div>
               </div>
             </div>
 
