@@ -231,7 +231,6 @@ const Panaderias = () => {
     fecha_inicio_servicio: '',
     horario_atencion: '',
     estado: 'activo',
-    observaciones: ''
   });
 
   // Debounce search for main table
@@ -335,7 +334,6 @@ const cargarPanaderiasPorCiudad = async () => {
       fecha_inicio_servicio: '',
       horario_atencion: '',
       estado: 'activo',
-      observaciones: ''
     });
     setSelectedPanaderia(null);
   };
@@ -711,10 +709,7 @@ const cargarPanaderiasPorCiudad = async () => {
               <Input label="Cantidad de bolsas / mes" name="cantidad_bolsas_mensual" value={formData.cantidad_bolsas_mensual} onChange={handleInputChange} placeholder="0" type="number" />
               <Input label="Fecha inicio servicio" name="fecha_inicio_servicio" value={formData.fecha_inicio_servicio} onChange={handleInputChange} placeholder="YYYY-MM-DD" type="date" />
               <Input label="Horario atención" name="horario_atencion" value={formData.horario_atencion} onChange={handleInputChange} placeholder="08:00 - 20:00" />
-              <label className="block md:col-span-2">
-                <div className="text-sm font-medium mb-1">Observaciones</div>
-                <textarea name="observaciones" value={formData.observaciones} onChange={handleInputChange} rows={3} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-200" />
-              </label>
+              
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -770,10 +765,7 @@ const cargarPanaderiasPorCiudad = async () => {
                 </div>
               </div>
 
-              <div className="pt-3 border-t">
-                <div className="text-sm text-gray-500">Observaciones</div>
-                <div className="mt-1">{selectedPanaderia.observaciones || '-'}</div>
-              </div>
+             
             </div>
 
             <div className="flex justify-end gap-3 mt-6">

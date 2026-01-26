@@ -29,7 +29,9 @@ app.get('/', (req, res) => {
       facturacion: '/api/facturacion',
       distribucion: '/api/distribucion',
       inventario: '/api/inventario',
-      pagos: '/api/pagos'
+      pagos: '/api/pagos',
+      vistas: '/api/vistas' // ← AGREGAR EN AMBOS app.get
+
     }
   });
 });
@@ -48,7 +50,9 @@ app.get('/api', (req, res) => {
       facturacion: '/api/facturacion',
       distribucion: '/api/distribucion',
       inventario: '/api/inventario',
-      pagos: '/api/pagos'
+      pagos: '/api/pagos',
+      vistas: '/api/vistas' // ← AGREGAR EN AMBOS app.get
+
 
     }
   });
@@ -64,6 +68,8 @@ const facturacionRoutes = require('./routes/facturacion');
 const distribucionRoutes = require('./routes/distribucion');
 const inventarioRoutes = require('./routes/inventario');
 const pagosRoutes = require('./routes/pagos');
+const vistasRoutes = require('./routes/vistas'); // ← AQUÍ
+
 
 // Usar rutas
 app.use('/api/anunciantes', anunciantesRoutes);
@@ -75,6 +81,7 @@ app.use('/api/facturacion', facturacionRoutes);
 app.use('/api/distribucion', distribucionRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/pagos', pagosRoutes);
+app.use('/api/vistas', vistasRoutes); // ← Y AQUÍ
 
 
 // Manejo de rutas no encontradas

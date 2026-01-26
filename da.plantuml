@@ -1,0 +1,84 @@
+```plantuml
+@startuml
+' Diagrama ER compatible con PlantUML 1.2024.x
+hide circle
+
+entity PANADERIAS {
+  *id_panaderia : INT
+  nombre_comercial : VARCHAR
+  razon_social : VARCHAR
+  ruc : VARCHAR
+  nombre_contacto : VARCHAR
+  cargo_contacto : VARCHAR
+  telefono : VARCHAR
+  celular : VARCHAR
+  email : VARCHAR
+  direccion : TEXT
+  ciudad : VARCHAR
+  provincia : VARCHAR
+  estado : VARCHAR
+}
+
+entity ANUNCIANTES {
+  *id_anunciante : INT
+  razon_social : VARCHAR
+  nombre_comercial : VARCHAR
+  ruc : VARCHAR
+  sector_comercial : VARCHAR
+  nombre_contacto : VARCHAR
+  telefono : VARCHAR
+  email : VARCHAR
+  estado : VARCHAR
+}
+
+entity FACTURACION {
+  *id_factura : INT
+  id_anunciante : INT
+  numero_factura : VARCHAR
+  fecha_emision : DATE
+  total : DECIMAL
+  estado_factura : VARCHAR
+}
+
+entity COBROS {
+  *id_cobro : INT
+  id_factura : INT
+  fecha_cobro : DATE
+  monto_cobrado : DECIMAL
+}
+
+entity DISTRIBUCION_BOLSAS {
+  *id_distribucion : INT
+  id_panaderia : INT
+  fecha_entrega : DATE
+  cantidad_entregada : INT
+}
+
+entity INVENTARIO {
+  *id_inventario : INT
+  tipo_material : VARCHAR
+  descripcion : VARCHAR
+  cantidad_actual : INT
+}
+
+entity MOVIMIENTOS_INVENTARIO {
+  *id_movimiento : INT
+  id_inventario : INT
+  tipo_movimiento : VARCHAR
+  cantidad : INT
+}
+
+entity PAGOS_FRANQUICIA {
+  *id_pago : INT
+  tipo_pago : VARCHAR
+  monto_total : DECIMAL
+  estado_pago : VARCHAR
+}
+
+ANUNCIANTES ||--o{ FACTURACION
+FACTURACION ||--o{ COBROS
+PANADERIAS ||--o{ DISTRIBUCION_BOLSAS
+INVENTARIO ||--o{ MOVIMIENTOS_INVENTARIO
+
+@enduml
+```
