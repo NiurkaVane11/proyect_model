@@ -31,51 +31,7 @@ function Footer() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             
-            {/* Formulario de contacto */}
-            <Card className="bg-white border-2 border-gray-200 shadow-lg hover:border-green-600 transition-all duration-300">
-              <CardContent className="p-8">
-                <h3 className="text-2xl font-bold mb-6 text-gray-900">Envíanos un Mensaje</h3>
-                <div className="space-y-4">
-                  <div>
-                    <input 
-                      type="text" 
-                      placeholder="Nombre completo"
-                      className="w-full px-4 py-3 rounded-lg bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <input 
-                      type="email" 
-                      placeholder="Correo electrónico"
-                      className="w-full px-4 py-3 rounded-lg bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <input 
-                      type="tel" 
-                      placeholder="Teléfono"
-                      className="w-full px-4 py-3 rounded-lg bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all"
-                    />
-                  </div>
-                 
-                  <div>
-                    <textarea 
-                      rows="4" 
-                      placeholder="Cuéntanos más sobre ti y tu interés en la franquicia..."
-                      className="w-full px-4 py-3 rounded-lg bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all resize-none"
-                    ></textarea>
-                  </div>
-                  <Button 
-                    onClick={handleSubmit}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 text-lg"
-                  >
-                    <Send className="w-5 h-5 mr-2" />
-                    Enviar Solicitud
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
+            
             {/* Información de contacto */}
             <div className="space-y-8">
               <div>

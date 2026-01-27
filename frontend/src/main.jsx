@@ -5,7 +5,6 @@ import './index.css'
 import App from './App.jsx'
 import Login from './components/Login.jsx'
 import AdminPanel from './components/admin/AdminPanel.jsx'
-import GerentePanel from './components/gerente/GerentePanel.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,7 +13,6 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<App />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/gerente" element={<GerentePanel />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

@@ -18,12 +18,6 @@ function Login() {
       password: 'admin123',
       role: 'administrador',
       name: 'Administrador'
-    },
-    gerente: {
-      email: 'gerente@infopan.com',
-      password: 'gerente123',
-      role: 'gerente',
-      name: 'Gerente'
     }
   };
 
@@ -46,11 +40,9 @@ function Login() {
         name: user.name
       }));
 
-      // Redirigir según el rol
+      // Redirigir al panel de administración
       if (user.role === 'administrador') {
         navigate('/admin');
-      } else if (user.role === 'gerente') {
-        navigate('/gerente');
       }
     } else {
       setError('Correo o contraseña incorrectos');
@@ -144,17 +136,11 @@ function Login() {
             </form>
 
             {/* Credenciales temporales (SOLO PARA DESARROLLO) */}
-            <div className="mt-4 space-y-2">
+            <div className="mt-4">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-xs text-blue-800 font-semibold mb-1">👨‍💼 Administrador:</p>
                 <p className="text-xs text-blue-700">Email: admin@infopan.com</p>
                 <p className="text-xs text-blue-700">Contraseña: admin123</p>
-              </div>
-              
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                <p className="text-xs text-purple-800 font-semibold mb-1">👔 Gerente:</p>
-                <p className="text-xs text-purple-700">Email: gerente@infopan.com</p>
-                <p className="text-xs text-purple-700">Contraseña: gerente123</p>
               </div>
             </div>
 

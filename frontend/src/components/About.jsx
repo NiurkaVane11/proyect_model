@@ -51,24 +51,19 @@ function About() {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button className="bg-green-600 hover:bg-green-700 text-white font-bold">
-                Quiero Anunciar
-              </Button>
-              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
-                Ver Casos de Éxito
-              </Button>
+             
             </div>
           </div>
           
           {/* Lado derecho - Visual */}
           <div className="space-y-6">
-            {/* Placeholder principal */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-100 via-emerald-50 to-amber-100 aspect-square flex items-center justify-center border-2 border-gray-200 group hover:border-green-600 transition-all duration-500 shadow-lg">
-              <div className="text-center space-y-4 p-8">
-                <div className="text-8xl">🛍️</div>
-                <p className="text-gray-700 text-lg font-bold">Bolsa Ecológica</p>
-                <p className="text-gray-500 text-sm">Con tu publicidad impresa</p>
-              </div>
+            {/* Imagen principal */}
+            <div className="relative rounded-2xl overflow-hidden aspect-square border-2 border-gray-200 hover:border-green-600 transition-all duration-500 shadow-lg group">
+              <img 
+                src="/fundapan.jpg" 
+                alt="Bolsa Ecológica INFOPAN" 
+                className="w-full h-full object-cover"
+              />
               
               {/* Overlay decorativo */}
               <div className="absolute inset-0 bg-gradient-to-br from-green-600/0 to-emerald-600/0 group-hover:from-green-600/10 group-hover:to-emerald-600/10 transition-all duration-500"></div>
