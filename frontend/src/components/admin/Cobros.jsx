@@ -167,52 +167,84 @@ const Cobros = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (c) => {
-    setSelectedCobro(c);
-    setModalMode('edit');
-    setFormData({ ...c });
-    setShowModal(true);
-  };
+ const handleEdit = (c) => {
+  setSelectedCobro(c);
+  setModalMode('edit');
+  setFormData({ ...c });  // ← Reemplaza SOLO esta línea
+  setShowModal(true);
+};
 
   const handleView = (c) => {
     setSelectedCobro(c);
     setShowViewModal(true);
   };
 
-  const handleSubmit = async () => {
-    // simple validations
-    if (
-      !formData.id_factura ||
-      !formData.fecha_cobro ||
-      !formData.monto_cobrado ||
-      !formData.metodo_pago
-    ) {
-      alert('Completa los campos obligatorios (*)');
-      return;
-    }
 
-    if (Number(formData.monto_cobrado) <= 0) {
-      alert('El monto cobrado debe ser mayor a 0');
-      return;
-    }
+  
+const handleSubmit = async () => {
+  // simple validations
+  if (
+    !formData.id_factura ||
+    !formData.fecha_cobro ||
+    !formData.monto_cobrado ||
+    !formData.metodo_pago
+  ) {
+    alert('Completa los campos obligatorios (*)');
+    return;
+  }
 
-    try {
-      setSaving(true);
-      if (modalMode === 'create') {
-        await cobrosService.create(formData);
+  if (Number(formData.monto_cobrado) <= 0) {
+    alert('El monto cobrado debe ser mayor a 0');
+    return;
+  }
+
+  try {
+    setSaving(true);
+    
+    // ✅ AGREGADO: Limpiar datos vacíos
+    const dataToSend = {};
+    Object.keys(formData).forEach(key => {
+      if (formData[key] === '' || formData[key] === null || formData[key] === undefined) {
+        dataToSend[key] = null;
       } else {
-        await cobrosService.update(selectedCobro.id_cobro, formData);
+        dataToSend[key] = formData[key];
       }
-      setShowModal(false);
-      resetForm();
-      await cargarCobros();
-    } catch (err) {
-      console.error(err);
-      alert('Error al guardar el cobro');
-    } finally {
-      setSaving(false);
+    });
+
+    console.log('📤 Enviando cobro:', dataToSend); // ← AGREGADO para debug
+
+    if (modalMode === 'create') {
+      const response = await cobrosService.create(dataToSend);
+      console.log('✅ Cobro creado:', response.data);
+    } else {
+      const response = await cobrosService.update(selectedCobro.id_cobro, dataToSend);
+      console.log('✅ Cobro actualizado:', response.data);
     }
-  };
+    
+    setShowModal(false);
+    resetForm();
+    await cargarCobros();
+  } catch (err) {
+    console.error('❌ Error completo:', err);
+    console.error('❌ Respuesta del servidor:', err.response?.data);
+    const errorMsg = err.response?.data?.message || 'Error al guardar el cobro';
+    alert(errorMsg);
+  } finally {
+    setSaving(false);
+  }
+};
+   
+
+
+
+
+
+
+
+
+
+
+
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar este cobro?')) return;

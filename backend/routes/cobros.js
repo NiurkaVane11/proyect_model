@@ -93,8 +93,7 @@ router.post('/', async (req, res) => {
       banco,
       numero_cuenta,
       observaciones,
-      archivo_comprobante,
-      usuario_registro
+      archivo_comprobante
     } = req.body;
 
     // Validaciones básicas
@@ -146,8 +145,8 @@ router.post('/', async (req, res) => {
       `INSERT INTO cobros (
         id_factura, numero_recibo, fecha_cobro, monto_cobrado,
         metodo_pago, numero_comprobante, banco, numero_cuenta,
-        observaciones, archivo_comprobante, usuario_registro
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        observaciones, archivo_comprobante
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id_factura,
         numero_recibo || null,
@@ -158,8 +157,7 @@ router.post('/', async (req, res) => {
         banco || null,
         numero_cuenta || null,
         observaciones || null,
-        archivo_comprobante || null,
-        usuario_registro || null
+        archivo_comprobante || null
       ]
     );
 
@@ -206,7 +204,13 @@ router.put('/:id', async (req, res) => {
       archivo_comprobante
     } = req.body;
 
-    if (!id_factura || !fecha_cobro || !monto_cobrado || !metodo_pago) {
+    // ✅ Formatear fecha si viene con hora (ISO format)
+    let fechaFormateada = fecha_cobro;
+    if (fecha_cobro && fecha_cobro.includes('T')) {
+      fechaFormateada = fecha_cobro.split('T')[0];
+    }
+
+    if (!id_factura || !fechaFormateada || !monto_cobrado || !metodo_pago) {
       return res.status(400).json({
         success: false,
         message: 'Faltan campos obligatorios'
@@ -250,7 +254,7 @@ router.put('/:id', async (req, res) => {
       [
         id_factura,
         numero_recibo || null,
-        fecha_cobro,
+        fechaFormateada,  // ✅ Usa la fecha formateada
         monto_cobrado,
         metodo_pago,
         numero_comprobante || null,

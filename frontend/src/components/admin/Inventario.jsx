@@ -132,13 +132,39 @@ const Inventario = () => {
   const handleEdit = (item) => {
     setSelectedItem(item);
     setModalMode('edit');
-    setFormData({ ...item });
+    // Convertir null a string vacío para los inputs
+    setFormData({
+      tipo_material: item.tipo_material || '',
+      descripcion: item.descripcion || '',
+      unidad_medida: item.unidad_medida || '',
+      cantidad_actual: item.cantidad_actual !== null && item.cantidad_actual !== undefined ? item.cantidad_actual : '',
+      cantidad_minima: item.cantidad_minima !== null && item.cantidad_minima !== undefined ? item.cantidad_minima : '',
+      cantidad_maxima: item.cantidad_maxima !== null && item.cantidad_maxima !== undefined ? item.cantidad_maxima : '',
+      costo_unitario: item.costo_unitario !== null && item.costo_unitario !== undefined ? item.costo_unitario : '',
+      ubicacion_almacen: item.ubicacion_almacen || '',
+      estado: item.estado || 'disponible'
+    });
     setShowModal(true);
   };
 
   const handleView = (item) => {
     setSelectedItem(item);
     setShowViewModal(true);
+  };
+
+  // Función helper para preparar datos antes de enviar
+  const prepareDataForSubmit = (data) => {
+    return {
+      tipo_material: data.tipo_material,
+      descripcion: data.descripcion,
+      unidad_medida: data.unidad_medida || null,
+      cantidad_actual: data.cantidad_actual !== '' ? parseInt(data.cantidad_actual, 10) : null,
+      cantidad_minima: data.cantidad_minima !== '' ? parseInt(data.cantidad_minima, 10) : null,
+      cantidad_maxima: data.cantidad_maxima !== '' ? parseInt(data.cantidad_maxima, 10) : null,
+      costo_unitario: data.costo_unitario !== '' ? parseFloat(data.costo_unitario) : null,
+      ubicacion_almacen: data.ubicacion_almacen || null,
+      estado: data.estado || 'disponible'
+    };
   };
 
   const handleSubmit = async () => {
@@ -153,17 +179,21 @@ const Inventario = () => {
 
     try {
       setSaving(true);
+      
+      // Preparar datos con conversión de vacíos a null
+      const dataToSend = prepareDataForSubmit(formData);
+
       if (modalMode === 'create') {
-        await inventarioService.create(formData);
+        await inventarioService.create(dataToSend);
       } else {
-        await inventarioService.update(selectedItem.id_inventario, formData);
+        await inventarioService.update(selectedItem.id_inventario, dataToSend);
       }
       setShowModal(false);
       resetForm();
       await cargarInventario();
     } catch (err) {
       console.error(err);
-      alert('Error al guardar el material');
+      alert('Error al guardar el material: ' + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }

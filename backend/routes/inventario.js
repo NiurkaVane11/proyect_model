@@ -2,6 +2,23 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 
+// Helper function: Convierte cadenas vacías a null para campos numéricos
+const parseIntOrNull = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return null;
+  }
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? null : parsed;
+};
+
+const parseDecimalOrNull = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return null;
+  }
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? null : parsed;
+};
+
 // GET - Obtener todo el inventario
 router.get('/', async (req, res) => {
   try {
@@ -148,7 +165,7 @@ router.get('/ubicacion/:ubicacion', async (req, res) => {
   }
 });
 
-// POST - Crear nuevo material en inventario
+// POST - Crear nuevo material en inventario (CORREGIDO)
 router.post('/', async (req, res) => {
   try {
     const {
@@ -165,13 +182,14 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     // Validar campos obligatorios
-    if (!tipo_material || !descripcion || cantidad_actual === undefined) {
+    if (!tipo_material || !descripcion || cantidad_actual === undefined || cantidad_actual === '') {
       return res.status(400).json({
         success: false,
         message: 'Tipo de material, descripción y cantidad actual son campos obligatorios'
       });
     }
 
+    // Convertir valores vacíos a null
     const result = await pool.query(
       `INSERT INTO inventario (
         tipo_material, descripcion, unidad_medida, cantidad_actual,
@@ -179,9 +197,16 @@ router.post('/', async (req, res) => {
         ubicacion_almacen, estado, usuario_registro
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        tipo_material, descripcion, unidad_medida, cantidad_actual,
-        cantidad_minima, cantidad_maxima, costo_unitario,
-        ubicacion_almacen, estado || 'disponible', usuario_registro
+        tipo_material,
+        descripcion,
+        unidad_medida || null,
+        parseIntOrNull(cantidad_actual),
+        parseIntOrNull(cantidad_minima),
+        parseIntOrNull(cantidad_maxima),
+        parseDecimalOrNull(costo_unitario),
+        ubicacion_almacen || null,
+        estado || 'disponible',
+        usuario_registro || null
       ]
     );
 
@@ -200,11 +225,22 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT - Actualizar material
+// PUT - Actualizar material (CORREGIDO)
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const {
+      tipo_material,
+      descripcion,
+      unidad_medida,
+      cantidad_actual,
+      cantidad_minima,
+      cantidad_maxima,
+      costo_unitario,
+      ubicacion_almacen,
+      estado,
+      usuario_registro
+    } = req.body;
     
     // Verificar que el material existe
     const exists = await pool.query(
@@ -219,15 +255,31 @@ router.put('/:id', async (req, res) => {
       });
     }
     
-    const fields = Object.keys(updates)
-      .map(key => `${key} = ?`)
-      .join(', ');
-    
-    const values = [...Object.values(updates), id];
-    
+    // Actualizar con conversión de valores vacíos a null
     await pool.query(
-      `UPDATE inventario SET ${fields} WHERE id_inventario = ?`,
-      values
+      `UPDATE inventario SET 
+        tipo_material = ?,
+        descripcion = ?,
+        unidad_medida = ?,
+        cantidad_actual = ?,
+        cantidad_minima = ?,
+        cantidad_maxima = ?,
+        costo_unitario = ?,
+        ubicacion_almacen = ?,
+        estado = ?
+      WHERE id_inventario = ?`,
+      [
+        tipo_material,
+        descripcion,
+        unidad_medida || null,
+        parseIntOrNull(cantidad_actual),
+        parseIntOrNull(cantidad_minima),
+        parseIntOrNull(cantidad_maxima),
+        parseDecimalOrNull(costo_unitario),
+        ubicacion_almacen || null,
+        estado || 'disponible',
+        id
+      ]
     );
 
     res.json({
@@ -271,7 +323,7 @@ router.patch('/:id/cantidad', async (req, res) => {
       });
     }
 
-    await pool.query(query, [cantidad_actual, id]);
+    await pool.query(query, [parseIntOrNull(cantidad_actual), id]);
 
     res.json({
       success: true,
