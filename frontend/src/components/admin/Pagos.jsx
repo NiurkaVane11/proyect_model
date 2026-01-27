@@ -95,15 +95,18 @@ const Pagos = () => {
   const [modalMode, setModalMode] = useState('create');
   const [selectedPago, setSelectedPago] = useState(null);
 
+  // ✅ CORREGIDO: Nombres de campos que coinciden con el backend
   const [formData, setFormData] = useState({
     id_franquiciado: '',
     id_franquicia: '',
     tipo_pago: '',
-    monto: '',
-    fecha_pago: '',
+    monto_total: '',              // ✅ Cambiado de "monto" a "monto_total"
+    fecha_emision: '',            // ✅ Cambiado de "fecha_pago" a "fecha_emision"
+    fecha_vencimiento: '',        // ✅ Agregado
+    fecha_pago: '',               // ✅ Mantener para fecha de pago real
     metodo_pago: 'efectivo',
     numero_comprobante: '',
-    estado: 'pendiente',
+    estado_pago: 'pendiente',     // ✅ Cambiado de "estado" a "estado_pago"
     observaciones: ''
   });
 
@@ -137,11 +140,13 @@ const Pagos = () => {
       id_franquiciado: '',
       id_franquicia: '',
       tipo_pago: '',
-      monto: '',
+      monto_total: '',
+      fecha_emision: '',
+      fecha_vencimiento: '',
       fecha_pago: '',
       metodo_pago: 'efectivo',
       numero_comprobante: '',
-      estado: 'pendiente',
+      estado_pago: 'pendiente',
       observaciones: ''
     });
     setSelectedPago(null);
@@ -156,13 +161,27 @@ const Pagos = () => {
   const handleEdit = (pago) => {
     setSelectedPago(pago);
     setModalMode('edit');
-    setFormData({ ...pago });
+    // ✅ CORREGIDO: Mapear los datos del backend al formulario
+    setFormData({
+      id_franquiciado: pago.id_franquiciado || '',
+      id_franquicia: pago.id_franquicia || '',
+      tipo_pago: pago.tipo_pago || '',
+      monto_total: pago.monto_total || pago.monto || '',
+      fecha_emision: pago.fecha_emision || '',
+      fecha_vencimiento: pago.fecha_vencimiento || '',
+      fecha_pago: pago.fecha_pago || '',
+      metodo_pago: pago.metodo_pago || 'efectivo',
+      numero_comprobante: pago.numero_comprobante || '',
+      estado_pago: pago.estado_pago || pago.estado || 'pendiente',
+      observaciones: pago.observaciones || ''
+    });
     setShowModal(true);
   };
 
   const handleSubmit = async () => {
-    if (!formData.monto || !formData.fecha_pago) {
-      alert('Completa los campos obligatorios');
+    // ✅ CORREGIDO: Validar campos correctos
+    if (!formData.monto_total || !formData.fecha_emision) {
+      alert('Completa los campos obligatorios (Monto y Fecha de Emisión)');
       return;
     }
 
@@ -199,22 +218,29 @@ const Pagos = () => {
 
   const pagosFiltrados = useMemo(() => {
     if (filtroEstado === 'Todos') return pagos;
-    return pagos.filter(p => p.estado?.toLowerCase() === filtroEstado.toLowerCase());
+    // ✅ CORREGIDO: Buscar tanto en estado_pago como en estado
+    return pagos.filter(p => 
+      p.estado_pago?.toLowerCase() === filtroEstado.toLowerCase() ||
+      p.estado?.toLowerCase() === filtroEstado.toLowerCase()
+    );
   }, [pagos, filtroEstado]);
 
+  // ✅ CORREGIDO: Usar monto_total en los cálculos
   const totalIngresos = useMemo(() => 
-    pagos.filter(p => ['pagado', 'completado'].includes(p.estado?.toLowerCase()))
-      .reduce((acc, p) => acc + Number(p.monto || 0), 0),
+    pagos.filter(p => ['pagado', 'completado'].includes((p.estado_pago || p.estado)?.toLowerCase()))
+      .reduce((acc, p) => acc + Number(p.monto_total || p.monto || 0), 0),
     [pagos]
   );
 
   const pagosPendientes = useMemo(() =>
-    pagos.filter(p => p.estado?.toLowerCase() === 'pendiente')
-      .reduce((acc, p) => acc + Number(p.monto || 0), 0),
+    pagos.filter(p => (p.estado_pago || p.estado)?.toLowerCase() === 'pendiente')
+      .reduce((acc, p) => acc + Number(p.monto_total || p.monto || 0), 0),
     [pagos]
   );
 
-  const pagadosCount = pagos.filter(p => ['pagado', 'completado'].includes(p.estado?.toLowerCase())).length;
+  const pagadosCount = pagos.filter(p => 
+    ['pagado', 'completado'].includes((p.estado_pago || p.estado)?.toLowerCase())
+  ).length;
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -288,7 +314,7 @@ const Pagos = () => {
                   <th className="px-4 py-3 text-left text-sm font-semibold">Franquiciado</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold">Tipo</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Monto</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold">Fecha</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold">Fecha Emisión</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Método</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Estado</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold">Acciones</th>
@@ -296,7 +322,7 @@ const Pagos = () => {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {pagosFiltrados.map((pago) => {
-                  const Icon = getEstadoIcon(pago.estado);
+                  const Icon = getEstadoIcon(pago.estado_pago || pago.estado);
                   return (
                     <tr key={pago.id_pago} className="hover:bg-green-50/40 transition-colors">
                       <td className="px-4 py-3">#{pago.id_pago}</td>
@@ -307,12 +333,14 @@ const Pagos = () => {
                       </td>
                       <td className="px-4 py-3">{pago.tipo_pago || '-'}</td>
                       <td className="px-4 py-3 text-center">
-                        <div className="text-green-600 font-bold">{formatCurrency(pago.monto)}</div>
+                        <div className="text-green-600 font-bold">
+                          {formatCurrency(pago.monto_total || pago.monto)}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <div className="flex items-center justify-center gap-1 text-sm">
                           <Calendar size={14} />
-                          <span>{formatDate(pago.fecha_pago)}</span>
+                          <span>{formatDate(pago.fecha_emision || pago.fecha_pago)}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -322,9 +350,9 @@ const Pagos = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${getEstadoColor(pago.estado)}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${getEstadoColor(pago.estado_pago || pago.estado)}`}>
                           <Icon size={12} />
-                          {pago.estado}
+                          {pago.estado_pago || pago.estado}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -361,8 +389,12 @@ const Pagos = () => {
               <Input label="ID Franquiciado" name="id_franquiciado" value={formData.id_franquiciado} onChange={handleInputChange} type="number" />
               <Input label="ID Franquicia" name="id_franquicia" value={formData.id_franquicia} onChange={handleInputChange} type="number" />
               <Input label="Tipo de Pago" name="tipo_pago" value={formData.tipo_pago} onChange={handleInputChange} />
-              <Input label="Monto" name="monto" value={formData.monto} onChange={handleInputChange} type="number" step="0.01" required />
-              <Input label="Fecha" name="fecha_pago" value={formData.fecha_pago} onChange={handleInputChange} type="date" required />
+              {/* ✅ CORREGIDO: Cambiar "monto" por "monto_total" */}
+              <Input label="Monto" name="monto_total" value={formData.monto_total} onChange={handleInputChange} type="number" step="0.01" required />
+              {/* ✅ CORREGIDO: Cambiar "fecha_pago" por "fecha_emision" */}
+              <Input label="Fecha de Emisión" name="fecha_emision" value={formData.fecha_emision} onChange={handleInputChange} type="date" required />
+              <Input label="Fecha de Vencimiento" name="fecha_vencimiento" value={formData.fecha_vencimiento} onChange={handleInputChange} type="date" />
+              <Input label="Fecha de Pago" name="fecha_pago" value={formData.fecha_pago} onChange={handleInputChange} type="date" />
               <Select
                 label="Método de Pago"
                 name="metodo_pago"
@@ -376,10 +408,11 @@ const Pagos = () => {
                 ]}
               />
               <Input label="Nº Comprobante" name="numero_comprobante" value={formData.numero_comprobante} onChange={handleInputChange} />
+              {/* ✅ CORREGIDO: Cambiar "estado" por "estado_pago" */}
               <Select
                 label="Estado"
-                name="estado"
-                value={formData.estado}
+                name="estado_pago"
+                value={formData.estado_pago}
                 onChange={handleInputChange}
                 options={[
                   { value: 'pendiente', label: 'Pendiente' },
